@@ -36,14 +36,13 @@ KNOWN_MODELS=[]
 def get_model(model_id):
     if model_id is None:
         results_obj = {
-                "description" : "Sets are a (still in development) construct within xDD creating a way for users to define, search, and interact with a set of documents within the xDD corpus. These sets may be defined by topic, keywords, journals, or simply a list of DOIs. Browse to any of the sets listed below (e.g. /sets/xdd-covid-19) for the set definitions along with available products created from each.",
-                "available_sets" : list(sets.keys())
+                "description" : "..."
                 }
         return jsonify(results_obj)
     else :
         if model_id not in KNOWN_MODELS:
             return {"error" : "Set undefined!"}
-        return jsonify(sets[model_id])
+        return jsonify({})
 
 if 'PREFIX' in os.environ:
     logging.info(f"Stripping {os.environ['PREFIX']}")
