@@ -1,0 +1,9 @@
+flask
+flask_cors
+requests
+gunicorn
+psycopg2
+pgcopy
+pymongo
+elasticsearch
+tqdm
