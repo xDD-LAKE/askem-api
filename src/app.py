@@ -13,7 +13,6 @@ from threading import Thread
 import json
 import base64
 from collections import OrderedDict
-from xdd.SetHelper import SetHelper
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.DEBUG)
 
 app = Flask(__name__)
