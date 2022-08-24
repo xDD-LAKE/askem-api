@@ -5,6 +5,6 @@ gunicorn
 psycopg2
 pgcopy
 pymongo
-elasticsearch
-elasticsearch_dsl
+elasticsearch==7.10
+elasticsearch_dsl==7.4.0
 tqdm

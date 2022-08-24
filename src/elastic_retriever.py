@@ -1,11 +1,9 @@
-from retrieval.retriever import Retriever
+from retriever import Retriever
 from elasticsearch_dsl import Search, Q
 from elasticsearch_dsl.connections import connections
 from elasticsearch import RequestsHttpConnection
 from elasticsearch_dsl import Document, Text, connections, Integer, Float, Keyword, Join
 from elasticsearch.helpers import bulk
-import hashlib
-import pandas as pd
 import hashlib
 import logging
 
@@ -36,6 +34,8 @@ class GrometFN(Document):
     area = Integer()
     pdf_name = Text(fields={'raw': Keyword()})
     img_pth = Text(fields={'raw': Keyword()})
+    class meta:
+        index='gromet-fn'
 
 
 class ElasticRetriever(Retriever):
@@ -45,7 +45,7 @@ class ElasticRetriever(Retriever):
     def search(self, query: dict) -> dict:
         connections.create_connection(hosts=self.hosts, timeout=20)
         doc_filter = False
-        s = Search(index='eo-site')
+        s = Search(index='gromet-fn')
         s = s.query(query)
         response = s.execute()
         return response
@@ -67,11 +67,10 @@ class ElasticRetriever(Retriever):
         return obj
 
     def build_index(self):
-        connections.create_connection(hosts=self.hosts)
         logger.info('Building elastic index')
         connections.create_connection(hosts=self.hosts)
-        GrometFN.init()
-        # TODO: Index documents.
+        GrometFN.init(index="gromet-fn")
+        # TODO: Read + index documents.
 
     def count(self, index:str):
         connections.create_connection(hosts=self.hosts)
