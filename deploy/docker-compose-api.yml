@@ -1,0 +1,36 @@
+version: '3.4'
+
+services:
+  gromet-api:
+    image: uwxdd/gromet-api
+    ports:
+      - 5000:5000
+    environment:
+      - ELASTIC_ADDRESS
+      - SCHEDULER_ADDRESS
+      - IMAGE_DIR
+    command: "gunicorn -b 0.0.0.0:5000 --log-level debug 'wsgi:app'"
+
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+    container_name: es01
+    environment:
+      - node.name=es01
+      - discovery.seed_hosts=es01
+      - cluster.initial_master_nodes=es01
+      - cluster.name=es-docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./es_data/:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 10s
+      timeout: 10s
+      retries: 5

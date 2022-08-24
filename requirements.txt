@@ -6,4 +6,5 @@ psycopg2
 pgcopy
 pymongo
 elasticsearch
+elasticsearch_dsl
 tqdm
