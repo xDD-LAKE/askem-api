@@ -13,11 +13,13 @@ from threading import Thread
 import json
 import base64
 from collections import OrderedDict
+from src.elastic_retriever import ElasticRetriever
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.DEBUG)
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 app.url_map.strict_slashes = False
+app.retriever=ElasticRetriever(hosts=os.environ.get('ELASTIC_ADDRESS', "es01:9200"))
 bp = Blueprint('xDD-gromet-api', __name__)
 
 # TODO: get ride of this obvious placeholder
@@ -33,9 +35,10 @@ def get_model(model_id):
                 }
         return jsonify(results_obj)
     else :
-        if model_id not in KNOWN_MODELS:
-            return {"error" : "Set undefined!"}
-        return jsonify({})
+        res = app.retriever.get_object(model_id)
+        logging.info(f"{type(res)}")
+
+        return jsonify(res)
 
 if 'PREFIX' in os.environ:
     logging.info(f"Stripping {os.environ['PREFIX']}")

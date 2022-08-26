@@ -1,4 +1,4 @@
-from retriever import Retriever
+from src.retriever import Retriever
 from elasticsearch_dsl import Search, Q
 from elasticsearch_dsl.connections import connections
 from elasticsearch import RequestsHttpConnection
@@ -44,8 +44,9 @@ class ElasticRetriever(Retriever):
     def get_object(self, id: str):
         connections.create_connection(hosts=self.hosts)
         try:
-            obj = GrometFN.get(id=id)
+            obj = GrometFN.get(id=id).to_dict()
         except:
+            logger.warning(f"Couldn't get GrometFN with id {id}!")
             obj = None
         return obj
 
@@ -62,6 +63,7 @@ class ElasticRetriever(Retriever):
                             }
                         }
                     }
+                # TODO: dump a real working mapping and use that
                 es.indices.create("gromet-fn", body=mapping) # TODO: put in settings.
                 logger.info("Index initialized.")
 
@@ -71,7 +73,7 @@ class ElasticRetriever(Retriever):
         for f in docs:
             logger.info(f'Ingesting {f}')
             data = json.load(open(f))
-            test = GrometFN(data)
+            test = GrometFN(**data)
             to_ingest.append(test) # for now, just expand the whole thing with no changes
         bulk(connections.get_connection(), [upsert(d) for d in to_ingest])
 
