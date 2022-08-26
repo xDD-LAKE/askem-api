@@ -20,13 +20,6 @@ app.config['JSON_SORT_KEYS'] = False
 app.url_map.strict_slashes = False
 bp = Blueprint('xDD-gromet-api', __name__)
 
-products = {}
-product_files = glob.glob("products/*.json")
-for f in product_files:
-    data = json.load(open(f))
-    products[data['name'].lower()] = data
-
-
 # TODO: get ride of this obvious placeholder
 KNOWN_MODELS=[]
 
