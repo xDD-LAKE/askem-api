@@ -4,4 +4,5 @@ COPY requirements.txt /app/
 RUN pip install -r requirements.txt
 COPY src/ /app/src
 COPY wsgi.py /app/
+COPY deploy/data/ /data/
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "wsgi:app"]
