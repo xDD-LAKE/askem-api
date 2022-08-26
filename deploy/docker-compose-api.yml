@@ -27,8 +27,8 @@ services:
         hard: -1
     volumes:
       - ./es_data/:/usr/share/elasticsearch/data
-#    ports:
-#      - 9200:9200
+    ports:
+      - 9200:9200
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9200"]
       interval: 10s
