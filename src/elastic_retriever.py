@@ -2,8 +2,10 @@ from retriever import Retriever
 from elasticsearch_dsl import Search, Q
 from elasticsearch_dsl.connections import connections
 from elasticsearch import RequestsHttpConnection
-from elasticsearch_dsl import Document, Text, connections, Integer, Float, Keyword, Join
+from elasticsearch_dsl import Document, Text, connections, Integer, Date, Float, Keyword, Join, Long, Object, Mapping, Nested
 from elasticsearch.helpers import bulk
+import glob
+import json
 import hashlib
 import logging
 
@@ -17,26 +19,15 @@ def upsert(doc: Document) -> dict:
     d['doc'] = d['_source']
     d['_index'] = doc.Index().name
     d['doc_as_upsert'] = True
-    d['_id'] = str(doc['_id'])
+    d['_id'] = str(doc.get_id())
     del d['_source']
     return d
 
 class GrometFN(Document):
-    cls = Text(fields={'raw': Keyword()})
-    detect_score = Float()
-    postprocess_score = Float()
-    dataset_id = Text(fields={'raw': Keyword()})
-    header_content = Text()
-    content = Text()
-    context_from_text = Text()
-    full_content = Text()
-    local_content = Text()
-    area = Integer()
-    pdf_name = Text(fields={'raw': Keyword()})
-    img_pth = Text(fields={'raw': Keyword()})
-    class meta:
-        index='gromet-fn'
-
+    class Index:
+        name='gromet-fn'
+    def get_id(self):
+        return 1
 
 class ElasticRetriever(Retriever):
     def __init__(self, hosts=['localhost']):
@@ -51,26 +42,38 @@ class ElasticRetriever(Retriever):
         return response
 
     def get_object(self, id: str):
-        if self.awsauth is not None:
-            connections.create_connection(hosts=self.hosts,
-                                          http_auth=self.awsauth,
-                                          use_ssl=True,
-                                          verify_certs=True,
-                                          connection_class=RequestsHttpConnection
-                                          )
-        else:
-            connections.create_connection(hosts=self.hosts)
+        connections.create_connection(hosts=self.hosts)
         try:
             obj = GrometFN.get(id=id)
         except:
             obj = None
         return obj
 
-    def build_index(self):
+    def build_index(self, input_dir):
         logger.info('Building elastic index')
         connections.create_connection(hosts=self.hosts)
-        GrometFN.init(index="gromet-fn")
-        # TODO: Read + index documents.
+
+        es= connections.get_connection()
+        if not es.indices.exists("gromet-fn"):
+                mapping = {
+                    "mappings": {
+                        "_source" : { "enabled" : True },
+                        "properties" : {
+                            }
+                        }
+                    }
+                es.indices.create("gromet-fn", body=mapping) # TODO: put in settings.
+                logger.info("Index initialized.")
+
+        docs = glob.glob(f"{input_dir}/*.json")
+        logger.info(f"Ingesting {len(docs)} documents.")
+        to_ingest = []
+        for f in docs:
+            logger.info(f'Ingesting {f}')
+            data = json.load(open(f))
+            test = GrometFN(data)
+            to_ingest.append(test) # for now, just expand the whole thing with no changes
+        bulk(connections.get_connection(), [upsert(d) for d in to_ingest])
 
     def count(self, index:str):
         connections.create_connection(hosts=self.hosts)
