@@ -13,6 +13,7 @@ from threading import Thread
 import json
 import base64
 from collections import OrderedDict
+from functools import wraps
 from src.elastic_retriever import ElasticRetriever
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.DEBUG)
 
@@ -25,15 +26,33 @@ bp = Blueprint('xDD-gromet-api', __name__)
 # TODO: get ride of this obvious placeholder
 KNOWN_MODELS=[]
 
+
+#def response(fcn):
+#    @wraps(fcn)
+#    def decorated_function(*args, **kwargs):
+#        tresult = fcn(*args, **kwargs)
+#        result = {'v' : 1, 'objects': tresult, 'license' : "dummy"}
+#        return result
+#    return decorated_function
+
 @bp.route('/', defaults={'model_id': None})
 @bp.route('/<model_id>')
 @bp.route('/<model_id>/')
+#@response
 def get_model(model_id):
+
+    metadata_type = request.args.get('metadata_type', type=str)
+
     if model_id is None:
-        results_obj = {
-                "description" : "..."
-                }
-        return jsonify(results_obj)
+        if metadata_type is not None:
+            logging.info("Searching by metadata type")
+            res = app.retriever.search_metadata(metadata_type=metadata_type)
+            return jsonify(res)
+        else:
+            results_obj = {
+                    "description" : "..."
+                    }
+            return jsonify(results_obj)
     else :
         res = app.retriever.get_object(model_id)
         logging.info(f"{type(res)}")

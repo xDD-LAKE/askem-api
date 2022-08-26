@@ -41,6 +41,16 @@ class ElasticRetriever(Retriever):
         response = s.execute()
         return response
 
+    def search_metadata(self, metadata_type: str = "") -> dict:
+        q = Q('match', metadata__metadata_type=metadata_type)
+        s = Search(index='gromet-fn')
+        s = s.query(q)
+        response = s.execute()
+        final_results = [r.meta.id for r in response]
+        final_results = [self.get_object(i) for i in final_results]
+        return final_results
+
+
     def get_object(self, id: str):
         connections.create_connection(hosts=self.hosts)
         try:
