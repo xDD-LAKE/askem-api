@@ -27,37 +27,35 @@ bp = Blueprint('xDD-gromet-api', __name__)
 KNOWN_MODELS=[]
 
 
-#def response(fcn):
-#    @wraps(fcn)
-#    def decorated_function(*args, **kwargs):
-#        tresult = fcn(*args, **kwargs)
-#        result = {'v' : 1, 'objects': tresult, 'license' : "dummy"}
-#        return result
-#    return decorated_function
+def response(fcn):
+    def wrapper(*args, **kwargs):
+        tresult = fcn(*args, **kwargs)
+        # TODO: catch non-successes.
+        result = {"success": {'v' : 1, 'data': tresult, 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
+        return jsonify(result)
+    return wrapper
 
 @bp.route('/', defaults={'model_id': None})
 @bp.route('/<model_id>')
 @bp.route('/<model_id>/')
-#@response
+@response
 def get_model(model_id):
-
     metadata_type = request.args.get('metadata_type', type=str)
 
     if model_id is None:
         if metadata_type is not None:
             logging.info("Searching by metadata type")
             res = app.retriever.search_metadata(metadata_type=metadata_type)
-            return jsonify(res)
+            return res
         else:
             results_obj = {
                     "description" : "..."
                     }
-            return jsonify(results_obj)
+            return results_obj
     else :
         res = app.retriever.get_object(model_id)
-        logging.info(f"{type(res)}")
-
-        return jsonify(res)
+        logging.info(f"res type {type(res)}")
+        return [res]
 
 if 'PREFIX' in os.environ:
     logging.info(f"Stripping {os.environ['PREFIX']}")
