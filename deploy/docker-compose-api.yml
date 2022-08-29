@@ -1,8 +1,8 @@
 version: '3.4'
 
 services:
-  gromet-api:
-    image: uwxdd/gromet-api
+  askem-api:
+    image: uwxdd/askem-api
     ports:
       - 5000:5000
     environment:

@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   upload:
-    image: uwxdd/gromet-api
+    image: uwxdd/askem-api
 #    volumes:
 #      - ./data/:/data/
     command: "python3.8 src/build_elastic_index.py --host=es01:9200 --input_dir=/data/"
