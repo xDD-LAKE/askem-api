@@ -12,6 +12,7 @@ import subprocess
 from threading import Thread
 import json
 import psycopg2
+from psycopg2.extras import execute_values
 from uuid import uuid4, UUID
 import base64
 from collections import OrderedDict
@@ -279,6 +280,100 @@ def reserve():
     cur.close()
     conn.close()
     return {"success" : True, "reserved_ids" : uuids}
+
+@bp.route('/register', methods=["POST", "GET"])
+def register():
+    helptext = {
+            "v" : VERSION,
+            "description": "Register a location for a reserved ASKE-ID.",
+            "options" : {
+                "parameters" : {
+                    "api_key" : "(required) API key assigned to an ASKE-ID registrant. Can also be passed as a header in the 'x-api-key' field."
+                    },
+                "body" : "POSTed request body must be a JSON object of the form [[ASKE-ID, json], [ASKE-ID, json]].",
+                "methods" : ["POST"],
+                "output_formats" : ["json"],
+                "fields" : {
+                    "registered_ids" : "List of successfully registered (or updated) ASKE-IDs."
+                    },
+                "examples": []
+                }
+            }
+    if request.method == "GET":
+        return {"success" : helptext}
+
+    headers = request.headers
+    api_key = headers.get('x-api-key', default = None)
+    if api_key is None:
+        api_key = request.args.get('api_key', default=None)
+        logging.info(f"got api_key from request.args")
+
+    try:
+        check = UUID(api_key)
+    except ValueError:
+        check = False
+
+    if api_key is None or check is False:
+        return {"error" :
+                {
+                    "message" : "You must specify a valid API key!",
+                    "v" : VERSION,
+                    "about" : helptext
+                }
+                }
+    if api_key is None:
+        return {"error" :
+                {
+                    "message" : "You must specify an API key!",
+                    "v" : VERSION,
+                    "about" : helptext
+                }
+                }
+    try:
+        objects = request.get_json()
+    except:
+        return {"error" :
+                {
+                    "message" : "Invalid body! Registration expects a JSON object of the form [[<ASKE-ID>, <location>], [<ASKE-ID>, <location>]].",
+                    "v" : VERSION,
+                    "about" : helptext
+                }
+                }
+
+    registered = []
+    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
+    conn.autocommit = True
+    cur = conn.cursor()
+    for oid, obj  in objects:
+        logging.info(f"Registering {oid}")
+        # TODO: maybe get all oids this key can register and do the check in-memory instead of against the DB?
+        try:
+            cur.execute("SELECT r.id FROM registrant r, object o WHERE o.registrant_id=r.id AND r.api_key=%(api_key)s AND o.id=%(oid)s", {"api_key" : api_key, "oid" : oid})
+            registrant_id = cur.fetchone()[0]
+            if registrant_id is None:
+                continue
+    #            return {"error" : "Provided API key not allowed to register this ASKE-ID!"}
+            obj = json.dumps(obj)
+            cur.execute("UPDATE object SET data=%(data)s WHERE id=%(oid)s", {"data" : obj, "oid": oid})
+            conn.commit()
+            # INSERT, since Elasticserach doesn't know about claimed, but unused, aske-ids
+            obj = json.loads(obj)
+            obj['_id'] = oid
+            obj['askem_id'] = oid
+            obj['_xdd_created'] = datetime.now()
+            obj['_xdd_registrant'] = registrant_id
+            app.retriever.add_object(obj)
+            registered.append(oid)
+        except:
+            logging.info(f"Couldn't register {oid}.")
+            logging.info(sys.exc_info())
+            conn.commit()
+    cur.close()
+    conn.close()
+    return {"success" : {
+            "registered_ids" : registered
+            }
+            }
 
 if 'PREFIX' in os.environ:
     logging.info(f"Stripping {os.environ['PREFIX']}")
