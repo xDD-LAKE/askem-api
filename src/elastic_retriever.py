@@ -1,4 +1,4 @@
-from src.retriever import Retriever
+from retriever import Retriever
 from elasticsearch_dsl import Search, Q
 from elasticsearch_dsl.connections import connections
 from elasticsearch import RequestsHttpConnection

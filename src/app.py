@@ -17,7 +17,8 @@ from uuid import uuid4, UUID
 import base64
 from collections import OrderedDict
 from functools import wraps
-from src.elastic_retriever import ElasticRetriever
+from elastic_retriever import ElasticRetriever
+import routes
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.DEBUG)
 
 app = Flask(__name__)
@@ -35,6 +36,8 @@ def require_apikey(fcn):
     def decorated_function(*args, **kwargs):
         headers = request.headers
         api_key = headers.get('x-api-key', default = None)
+        if len(request.args) == 0 and len(args) == 0 and len(kwargs) == 0: # if bare request, show the helptext even without an API key
+            return fcn(*args, **kwargs)
         if api_key is None:
             api_key = request.args.get('api_key', default=None)
             logging.info(f"got api_key from request.args")
@@ -56,8 +59,6 @@ def require_apikey(fcn):
                         "about" : ",,,"
                         }
                     }
-        elif len(request.args) == 0 and len(args) == 0 and len(kwargs) == 0: # if bare request, show the helptext even without an API key
-            return fcn(*args, **kwargs)
         else:
             return fcn(*args, **kwargs)
     return decorated_function
@@ -129,30 +130,30 @@ cconn.close()
 def response(fcn):
     def wrapper(*args, **kwargs):
         tresult = fcn(*args, **kwargs)
-        # TODO: catch non-successes.
-        result = {"success": {'v' : 1, 'data': tresult, 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
+        error = False
+        # TODO: actually catch non-successes.
+        if error:
+            result = {"error": {'v' : VERSION, 'message': "reason goes here", "about": tresult, 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
+        else:
+            result = {"success": {'v' : VERSION, 'data': tresult, 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
         return jsonify(result)
     return wrapper
 
-@bp.route('/object', defaults={'model_id': None})
-@bp.route('/object/<model_id>')
-@bp.route('/object/<model_id>/')
+@bp.route('/object', defaults={'object_id': None})
+@bp.route('/object/<object_id>')
+@bp.route('/object/<object_id>/')
 @response
-def get_model(model_id):
+def object(object_id):
     metadata_type = request.args.get('metadata_type', type=str)
-
-    if model_id is None:
+    if object_id is None:
         if metadata_type is not None:
             logging.info("Searching by metadata type")
             res = app.retriever.search_metadata(metadata_type=metadata_type)
             return res
         else:
-            results_obj = {
-                    "description" : "..."
-                    }
-            return results_obj
+            return routes.helptext['object']
     else :
-        res = app.retriever.get_object(model_id)
+        res = app.retriever.get_object(object_id)
         logging.info(f"res type {type(res)}")
         return [res]
 
@@ -160,24 +161,8 @@ def get_model(model_id):
 @bp.route('/create', methods=["POST", "GET"])
 @require_apikey
 def create():
-    helptext = {
-            "v" : VERSION,
-            "description": "Create and register a new ASKE-ID.",
-            "options" : {
-                "parameters" : {
-                    "api_key" : "(required) API key assigned to an ASKE-ID registrant. Can also be passed as a header in the 'x-api-key' field."
-                    },
-                "body" : "POSTed request body must be a JSON object of the form [json1, json2].",
-                "methods" : ["POST"],
-                "output_formats" : ["json"],
-                "fields" : {
-                    "registered_ids" : "Array of successfully registered ASKE-IDs."
-                    },
-                "examples": []
-                }
-            }
     if request.method == "GET":
-        return {"success" : helptext}
+        return routes.helptext["create"]
 
     try:
         objects = request.get_json()
@@ -186,7 +171,7 @@ def create():
                 {
                     "message" : "Invalid body! Registration expects a JSON object of the form [<location>, <location>] or [[<location>, <description>], [<location>, <description>], ...].",
                     "v" : VERSION,
-                    "about" : helptext
+                    "about" : routes.helptext["create"]
                 }
                 }
 
@@ -237,25 +222,8 @@ def create():
 @bp.route('/reserve', methods=["GET", "POST"])
 @require_apikey
 def reserve():
-    helptext = {
-            "v" : VERSION,
-            "description": "Reserve a block of ASKE-IDs for later registration.",
-            "options" : {
-                "parameters" : {
-                    "api_key" : "(required) API key assigned to an ASKE-ID registrant. Can also be passed as a header in the 'x-api-key' field.",
-                    "n" : "(option, int, default 10) Number of ASKE-IDs to reserve."
-                    },
-                "methods" : ["POST"],
-                "output_formats" : ["json"],
-                "fields" : {
-                    "reserved_ids" : "List of unique ASKE-IDs reserved for usage by the associated registrant API key."
-                    },
-                "examples": []
-                }
-            }
-
     if request.method == "GET":
-        return {"success" : helptext}
+        return {"success" : routes.helptext['reserve']}
 
     headers = request.headers
     api_key = headers.get('x-api-key', default = None)
@@ -286,24 +254,9 @@ def reserve():
 @bp.route('/register', methods=["POST", "GET"])
 @require_apikey
 def register():
-    helptext = {
-            "v" : VERSION,
-            "description": "Register a location for a reserved ASKE-ID.",
-            "options" : {
-                "parameters" : {
-                    "api_key" : "(required) API key assigned to an ASKE-ID registrant. Can also be passed as a header in the 'x-api-key' field."
-                    },
-                "body" : "POSTed request body must be a JSON object of the form [[ASKE-ID, json], [ASKE-ID, json]].",
-                "methods" : ["POST"],
-                "output_formats" : ["json"],
-                "fields" : {
-                    "registered_ids" : "List of successfully registered (or updated) ASKE-IDs."
-                    },
-                "examples": []
-                }
-            }
     if request.method == "GET":
-        return {"success" : helptext}
+        logging.info("???" + str(routes.helptext['register']))
+        return {"success" : routes.helptext['register']}
 
     headers = request.headers
     api_key = headers.get('x-api-key', default = None)
@@ -318,7 +271,7 @@ def register():
                 {
                     "message" : "Invalid body! Registration expects a JSON object of the form [[<ASKE-ID>, <location>], [<ASKE-ID>, <location>]].",
                     "v" : VERSION,
-                    "about" : helptext
+                    "about" : routes.helptext['register']
                 }
                 }
 
