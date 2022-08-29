@@ -5,6 +5,7 @@ from elasticsearch import RequestsHttpConnection
 from elasticsearch_dsl import Document, Text, connections, Integer, Date, Float, Keyword, Join, Long, Object, Mapping, Nested
 from elasticsearch.helpers import bulk
 from datetime import datetime
+import sys
 import glob
 import json
 import hashlib
@@ -43,6 +44,7 @@ class ElasticRetriever(Retriever):
         return response
 
     def search_metadata(self, metadata_type: str = "") -> dict:
+        connections.create_connection(hosts=self.hosts, timeout=20)
         q = Q('match', metadata__metadata_type=metadata_type)
         s = Search(index='gromet-fn')
         s = s.query(q)
@@ -99,13 +101,13 @@ class ElasticRetriever(Retriever):
         bulk(connections.get_connection(), [upsert(d) for d in to_ingest])
 
     def add_object(self, data: dict) -> int:
-        # TODO add internal metadata
-        # TODO save
+        connections.create_connection(hosts=self.hosts, timeout=20)
         # TODO (eventually) : check data consistency
         test = GrometFN(**data)
         try:
             test.save()
         except:
+            logging.error(sys.exc_info())
             return 1
         return 0
 
@@ -114,6 +116,7 @@ class ElasticRetriever(Retriever):
         Assume that we're just appending to existing metadata?
         Can users delete metadata?
         '''
+        connections.create_connection(hosts=self.hosts, timeout=20)
 
         # TODO Get object
         # TODO append to _xdd_modified

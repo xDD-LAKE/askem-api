@@ -30,6 +30,47 @@ bp = Blueprint('xDD-gromet-api', __name__)
 KNOWN_MODELS=[]
 VERSION = 1
 
+def require_apikey(fcn):
+    @wraps(fcn)
+    def decorated_function(*args, **kwargs):
+        headers = request.headers
+        api_key = headers.get('x-api-key', default = None)
+        if api_key is None:
+            api_key = request.args.get('api_key', default=None)
+            logging.info(f"got api_key from request.args")
+        if api_key is None:
+            return {"error" :
+                    {
+                        "message" : "You must specify an API key!",
+                        "v" : VERSION,
+                        "about" : "..."
+                    }
+                    }
+        registrant_id = get_registrant_id(api_key)
+        if registrant_id is None:
+            cur.close()
+            conn.close()
+            return {"error" :
+                    {"message" : "Provided API key not allowed to reserve ASKE-IDs!",
+                        "v": VERSION,
+                        "about" : ",,,"
+                        }
+                    }
+        elif len(request.args) == 0 and len(args) == 0 and len(kwargs) == 0: # if bare request, show the helptext even without an API key
+            return fcn(*args, **kwargs)
+        else:
+            return fcn(*args, **kwargs)
+    return decorated_function
+
+def get_registrant_id(api_key):
+    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM registrant WHERE api_key=%(api_key)s", {"api_key" : api_key})
+    registrant_id = cur.fetchone()
+    return registrant_id[0]
+
+
 def table_exists(cur, table_name):
     """
     Check if a table exists in the current database
@@ -117,6 +158,7 @@ def get_model(model_id):
 
 
 @bp.route('/create', methods=["POST", "GET"])
+@require_apikey
 def create():
     helptext = {
             "v" : VERSION,
@@ -137,19 +179,6 @@ def create():
     if request.method == "GET":
         return {"success" : helptext}
 
-    headers = request.headers
-    api_key = headers.get('x-api-key', default = None)
-    if api_key is None:
-        api_key = request.args.get('api_key', default=None)
-        logging.info(f"got api_key from request.args")
-    if api_key is None:
-        return {"error" :
-                {
-                    "message" : "You must specify an API key!",
-                    "v" : VERSION,
-                    "about" : helptext
-                }
-                }
     try:
         objects = request.get_json()
     except:
@@ -161,31 +190,24 @@ def create():
                 }
                 }
 
+    api_key = request.headers.get('x-api-key', default = None)
+    if api_key is None:
+        api_key = request.args.get('api_key', default=None)
+        logging.info(f"got api_key from request.args")
+
+    reg_id = get_registrant_id(api_key)
+
     conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
     conn.autocommit = True
     cur = conn.cursor()
-
-    cur.execute("SELECT id FROM registrant WHERE api_key=%(api_key)s", {"api_key" : api_key})
-    reg_id = cur.fetchone()[0]
-    if reg_id is None:
-        cur.close()
-        conn.close()
-        return {"error" :
-                {
-                    "message" : "Invalid API key!",
-                    "v" : VERSION,
-                    "about" : helptext
-                }
-                }
-
     registered = []
     if isinstance(objects, dict):
         objects = [objects]
     for obj in objects:
-        logging.info(f"{type(obj)}")
         obj = json.dumps(obj)
-        logging.info(f"{type(obj)}")
+        # TODO: reserve IDs, then do things indentically to the register route.
         try:
+            # TODO: ---- this can all be refactored ---
             cur.execute("INSERT INTO object (data, registrant_id) VALUES (%(data)s, %(registrant_id)s) RETURNING id", {"data" : obj, "registrant_id" : reg_id})
             oid = cur.fetchone()[0]
             conn.commit()
@@ -198,6 +220,7 @@ def create():
             obj['_xdd_created'] = datetime.now()
             obj['_xdd_registrant'] = reg_id
             app.retriever.add_object(obj)
+            # TODO: ---- this can all be refactored ---
 
         except:
             logging.info(f"Couldn't register {obj}.")
@@ -212,6 +235,7 @@ def create():
 
 
 @bp.route('/reserve', methods=["GET", "POST"])
+@require_apikey
 def reserve():
     helptext = {
             "v" : VERSION,
@@ -237,19 +261,6 @@ def reserve():
     api_key = headers.get('x-api-key', default = None)
     if api_key is None:
         api_key = request.args.get('api_key', default=None)
-    try:
-        check = UUID(api_key)
-    except ValueError:
-        check = False
-
-    if api_key is None or check is False:
-        return {"error" :
-                {
-                    "message" : "You must specify a valid API key!",
-                    "v" : VERSION,
-                    "about" : helptext
-                }
-                }
 
     n_requested = request.args.get('n', default=10)
     if not isinstance(n_requested, int):
@@ -258,17 +269,8 @@ def reserve():
     conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
     conn.autocommit = True
     cur = conn.cursor()
-    cur.execute("SELECT id FROM registrant WHERE api_key=%(api_key)s", {"api_key" : api_key})
-    registrant_id = cur.fetchone()
-    if registrant_id is None:
-        cur.close()
-        conn.close()
-        return {"error" :
-                {"message" : "Provided API key not allowed to reserve ASKE-IDs!",
-                    "v": VERSION,
-                    "about" : helptext
-                    }
-                }
+
+    registrant_id = get_registrant_id(api_key)
 
     uuids = [str(uuid4()) for i in range(n_requested)]
 
@@ -279,9 +281,10 @@ def reserve():
     conn.commit()
     cur.close()
     conn.close()
-    return {"success" : True, "reserved_ids" : uuids}
+    return {"success" : {"reserved_ids" : uuids}}
 
 @bp.route('/register', methods=["POST", "GET"])
+@require_apikey
 def register():
     helptext = {
             "v" : VERSION,
@@ -309,27 +312,6 @@ def register():
         logging.info(f"got api_key from request.args")
 
     try:
-        check = UUID(api_key)
-    except ValueError:
-        check = False
-
-    if api_key is None or check is False:
-        return {"error" :
-                {
-                    "message" : "You must specify a valid API key!",
-                    "v" : VERSION,
-                    "about" : helptext
-                }
-                }
-    if api_key is None:
-        return {"error" :
-                {
-                    "message" : "You must specify an API key!",
-                    "v" : VERSION,
-                    "about" : helptext
-                }
-                }
-    try:
         objects = request.get_json()
     except:
         return {"error" :
@@ -349,7 +331,7 @@ def register():
         # TODO: maybe get all oids this key can register and do the check in-memory instead of against the DB?
         try:
             cur.execute("SELECT r.id FROM registrant r, object o WHERE o.registrant_id=r.id AND r.api_key=%(api_key)s AND o.id=%(oid)s", {"api_key" : api_key, "oid" : oid})
-            registrant_id = cur.fetchone()[0]
+            registrant_id = cur.fetchone()[0] # we can get this otherwise, but we need to check the object_id/registrant_id validity
             if registrant_id is None:
                 continue
     #            return {"error" : "Provided API key not allowed to register this ASKE-ID!"}
@@ -361,9 +343,12 @@ def register():
             obj['_id'] = oid
             obj['askem_id'] = oid
             obj['_xdd_created'] = datetime.now()
-            obj['_xdd_registrant'] = registrant_id
-            app.retriever.add_object(obj)
-            registered.append(oid)
+            obj['_xdd_registrant'] = get_registrant_id(api_key)
+            check = app.retriever.add_object(obj)
+            if check == 1:
+                logging.warning("Issue writing to ES for some reason!")
+            else:
+                registered.append(oid)
         except:
             logging.info(f"Couldn't register {oid}.")
             logging.info(sys.exc_info())
