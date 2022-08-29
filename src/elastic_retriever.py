@@ -4,6 +4,7 @@ from elasticsearch_dsl.connections import connections
 from elasticsearch import RequestsHttpConnection
 from elasticsearch_dsl import Document, Text, connections, Integer, Date, Float, Keyword, Join, Long, Object, Mapping, Nested
 from elasticsearch.helpers import bulk
+from datetime import datetime
 import glob
 import json
 import hashlib
@@ -19,7 +20,7 @@ def upsert(doc: Document) -> dict:
     d['doc'] = d['_source']
     d['_index'] = doc.Index().name
     d['doc_as_upsert'] = True
-    d['_id'] = str(doc.get_id())
+#    d['_id'] = str(doc.get_id())
     del d['_source']
     return d
 
@@ -83,9 +84,42 @@ class ElasticRetriever(Retriever):
         for f in docs:
             logger.info(f'Ingesting {f}')
             data = json.load(open(f))
+
+            # I'm loading these manually, so set registrant appropriately
+            data["_xdd_registrant"] = 1
+            data["_xdd_created"] = datetime.now()
+            data["_xdd_modified"] = []
+
+            # TODO: get askem-ids
+            data["askem_id"] = "1"
+            data["_id"] = data["askem_id"]
+
             test = GrometFN(**data)
             to_ingest.append(test) # for now, just expand the whole thing with no changes
         bulk(connections.get_connection(), [upsert(d) for d in to_ingest])
+
+    def add_object(self, data: dict) -> int:
+        # TODO add internal metadata
+        # TODO save
+        # TODO (eventually) : check data consistency
+        test = GrometFN(**data)
+        try:
+            test.save()
+        except:
+            return 1
+        return 0
+
+    def modify_object(self, data:dict) -> int:
+        '''
+        Assume that we're just appending to existing metadata?
+        Can users delete metadata?
+        '''
+
+        # TODO Get object
+        # TODO append to _xdd_modified
+        # TODO change data
+        # TODO save
+        raise NotImplementedError('TODO')
 
     def count(self, index:str):
         connections.create_connection(hosts=self.hosts)
