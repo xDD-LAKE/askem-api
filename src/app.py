@@ -31,38 +31,6 @@ bp = Blueprint('xDD-gromet-api', __name__)
 KNOWN_MODELS=[]
 VERSION = 1
 
-def require_apikey(fcn):
-    @wraps(fcn)
-    def decorated_function(*args, **kwargs):
-        headers = request.headers
-        api_key = headers.get('x-api-key', default = None)
-        if len(request.args) == 0 and len(args) == 0 and len(kwargs) == 0: # if bare request, show the helptext even without an API key
-            return fcn(*args, **kwargs)
-        if api_key is None:
-            api_key = request.args.get('api_key', default=None)
-            logging.info(f"got api_key from request.args")
-        if api_key is None:
-            return {"error" :
-                    {
-                        "message" : "You must specify an API key!",
-                        "v" : VERSION,
-                        "about" : "..."
-                    }
-                    }
-        registrant_id = get_registrant_id(api_key)
-        if registrant_id is None:
-            cur.close()
-            conn.close()
-            return {"error" :
-                    {"message" : "Provided API key not allowed to reserve ASKE-IDs!",
-                        "v": VERSION,
-                        "about" : ",,,"
-                        }
-                    }
-        else:
-            return fcn(*args, **kwargs)
-    return decorated_function
-
 def get_registrant_id(api_key):
     conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
     conn.autocommit = True
@@ -130,14 +98,48 @@ cconn.close()
 def response(fcn):
     def wrapper(*args, **kwargs):
         tresult = fcn(*args, **kwargs)
-        error = False
-        # TODO: actually catch non-successes.
-        if error:
-            result = {"error": {'v' : VERSION, 'message': "reason goes here", "about": tresult, 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
+        if "error" in tresult:
+            result = {"error": {'v' : VERSION, 'message': tresult["error"], "about": routes.helptext[fcn.__name__], 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
         else:
+            # TODO: this won't quite match the usual structure, since the "data" field implies successful request
             result = {"success": {'v' : VERSION, 'data': tresult, 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
         return jsonify(result)
+    wrapper.__name__ = fcn.__name__ #wrapper name shenanigans: https://stackoverflow.com/questions/17256602/assertionerror-view-function-mapping-is-overwriting-an-existing-endpoint-functi
     return wrapper
+
+def require_apikey(fcn):
+    @wraps(fcn)
+    def decorated_function(*args, **kwargs):
+        headers = request.headers
+        api_key = headers.get('x-api-key', default = None)
+        if len(request.args) == 0 and len(args) == 0 and len(kwargs) == 0: # if bare request, show the helptext even without an API key
+            return fcn(*args, **kwargs)
+        if api_key is None:
+            api_key = request.args.get('api_key', default=None)
+            logging.info(f"got api_key from request.args")
+        if api_key is None:
+            return {"error" :
+                    {
+                        "message" : "You must specify an API key!",
+                        "v" : VERSION,
+                        "about" : "..."
+                    }
+                    }
+        registrant_id = get_registrant_id(api_key)
+        if registrant_id is None:
+            cur.close()
+            conn.close()
+            return {"error" :
+                    {"message" : "Provided API key not allowed to reserve ASKE-IDs!",
+                        "v": VERSION,
+                        "about" : ",,,"
+                        }
+                    }
+        else:
+            return fcn(*args, **kwargs)
+    return decorated_function
+
+
 
 @bp.route('/object', defaults={'object_id': None})
 @bp.route('/object/<object_id>')
@@ -157,29 +159,20 @@ def object(object_id):
         logging.info(f"res type {type(res)}")
         return [res]
 
-
 @bp.route('/create', methods=["POST", "GET"])
+@response
 @require_apikey
 def create():
     if request.method == "GET":
         return routes.helptext["create"]
-
     try:
         objects = request.get_json()
     except:
-        return {"error" :
-                {
-                    "message" : "Invalid body! Registration expects a JSON object of the form [<location>, <location>] or [[<location>, <description>], [<location>, <description>], ...].",
-                    "v" : VERSION,
-                    "about" : routes.helptext["create"]
-                }
-                }
+        return {"error" : "Invalid body! Please pass in valid JSON."}
 
     api_key = request.headers.get('x-api-key', default = None)
     if api_key is None:
         api_key = request.args.get('api_key', default=None)
-        logging.info(f"got api_key from request.args")
-
     reg_id = get_registrant_id(api_key)
 
     conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
@@ -214,16 +207,17 @@ def create():
     cur.close()
     conn.close()
     return {"success" : {
-            "registered_ids" : registered
+        "registered_ids" : registered
         }
         }
 
 
 @bp.route('/reserve', methods=["GET", "POST"])
+@response
 @require_apikey
 def reserve():
     if request.method == "GET":
-        return {"success" : routes.helptext['reserve']}
+        return routes.helptext['reserve']
 
     headers = request.headers
     api_key = headers.get('x-api-key', default = None)
@@ -252,11 +246,12 @@ def reserve():
     return {"success" : {"reserved_ids" : uuids}}
 
 @bp.route('/register', methods=["POST", "GET"])
+@response
 @require_apikey
 def register():
     if request.method == "GET":
         logging.info("???" + str(routes.helptext['register']))
-        return {"success" : routes.helptext['register']}
+        return routes.helptext['register']
 
     headers = request.headers
     api_key = headers.get('x-api-key', default = None)
@@ -267,13 +262,7 @@ def register():
     try:
         objects = request.get_json()
     except:
-        return {"error" :
-                {
-                    "message" : "Invalid body! Registration expects a JSON object of the form [[<ASKE-ID>, <location>], [<ASKE-ID>, <location>]].",
-                    "v" : VERSION,
-                    "about" : routes.helptext['register']
-                }
-                }
+        return {"error" : "Invalid body! Registration expects a JSON object of the form [[<ASKE-ID>, <location>], [<ASKE-ID>, <location>]]."}
 
     registered = []
     conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
