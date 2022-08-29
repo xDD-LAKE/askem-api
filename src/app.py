@@ -32,7 +32,7 @@ KNOWN_MODELS=[]
 VERSION = 1
 
 def get_registrant_id(api_key):
-    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
+    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database=os.environ["POSTGRES_DB"])
     conn.autocommit = True
     cur = conn.cursor()
     cur.execute("SELECT id FROM registrant WHERE api_key=%(api_key)s", {"api_key" : api_key})
@@ -67,7 +67,7 @@ else:
     user = 'zalando'
 
 # Init postgres db if needed
-cconn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
+cconn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database=os.environ["POSTGRES_DB"])
 cconn.autocommit = True
 ccur = cconn.cursor()
 
@@ -175,7 +175,7 @@ def create():
         api_key = request.args.get('api_key', default=None)
     reg_id = get_registrant_id(api_key)
 
-    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
+    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database=os.environ["POSTGRES_DB"])
     conn.autocommit = True
     cur = conn.cursor()
     registered = []
@@ -228,7 +228,7 @@ def reserve():
     if not isinstance(n_requested, int):
         n_requested = int(n_requested)
 
-    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
+    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database=os.environ["POSTGRES_DB"])
     conn.autocommit = True
     cur = conn.cursor()
 
@@ -265,7 +265,7 @@ def register():
         return {"error" : "Invalid body! Registration expects a JSON object of the form [[<ASKE-ID>, <location>], [<ASKE-ID>, <location>]]."}
 
     registered = []
-    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
+    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database=os.environ["POSTGRES_DB"])
     conn.autocommit = True
     cur = conn.cursor()
     for oid, obj  in objects:
