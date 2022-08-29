@@ -17,7 +17,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: uwxdd/gromet-api
+          images: uwxdd/askem-api
           tags: |
             type=sha,enable=true,priority=100,prefix=sha-,suffix=,format=short
             type=raw,value=latest,enable={{is_default_branch}}
