@@ -11,6 +11,7 @@ import datetime
 import subprocess
 from threading import Thread
 import json
+import psycopg2
 import base64
 from collections import OrderedDict
 from functools import wraps
@@ -26,6 +27,51 @@ bp = Blueprint('xDD-gromet-api', __name__)
 # TODO: get ride of this obvious placeholder
 KNOWN_MODELS=[]
 
+def table_exists(cur, table_name):
+    """
+    Check if a table exists in the current database
+    :cur: psql cursort
+    :table_name: Name of table to search for.
+    :returns: True if it exists, False if not
+    """
+    cur.execute("""SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' """)
+    for table in cur.fetchall():
+        logging.info(table[0])
+        if table_name == table[0]:
+            return True
+        else:
+            continue
+    return False
+
+if "POSTGRES_HOST" in os.environ:
+    host = os.environ["POSTGRES_HOST"]
+else:
+    host = 'aske-id-registration'
+
+if "POSTGRES_USER" in os.environ:
+    user = os.environ["POSTGRES_USER"]
+else:
+    user = 'zalando'
+
+# Init postgres db if needed
+cconn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database='aske_id')
+cconn.autocommit = True
+ccur = cconn.cursor()
+
+if not table_exists(ccur, "registrant"):
+    ccur.execute("""
+        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+        """)
+    cconn.commit()
+    ccur.execute("""
+        CREATE TABLE registrant (
+            id SERIAL PRIMARY KEY,
+            registrant text,
+            api_key uuid DEFAULT uuid_generate_v4()
+        );""")
+    cconn.commit()
+ccur.close()
+cconn.close()
 
 def response(fcn):
     def wrapper(*args, **kwargs):

@@ -6,10 +6,21 @@ services:
     ports:
       - 5000:5000
     environment:
-      - ELASTIC_ADDRESS
-      - SCHEDULER_ADDRESS
-      - IMAGE_DIR
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: aske_id
     command: "gunicorn -b 0.0.0.0:5000 --log-level debug 'wsgi:app'"
+
+  postgres:
+    image: postgres:10.5
+    environment:
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: aske_id
+    ports:
+      - 5432:5432
 
   es01:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
