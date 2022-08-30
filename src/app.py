@@ -15,6 +15,7 @@ import psycopg2
 from psycopg2.extras import execute_values
 from uuid import uuid4, UUID
 import base64
+from typing import Type
 from collections import OrderedDict
 from functools import wraps
 from elastic_retriever import ElasticRetriever
@@ -37,8 +38,10 @@ def get_registrant_id(api_key):
     cur = conn.cursor()
     cur.execute("SELECT id FROM registrant WHERE api_key=%(api_key)s", {"api_key" : api_key})
     registrant_id = cur.fetchone()
-    return registrant_id[0]
-
+    if registrant_id is None:
+        return None
+    else:
+        return registrant_id[0]
 
 def table_exists(cur, table_name):
     """
@@ -55,6 +58,32 @@ def table_exists(cur, table_name):
         else:
             continue
     return False
+
+def save_object(oid: UUID, obj: dict, registrant_id:UUID, conn:Type[psycopg2.extensions.connection]) -> tuple:
+    '''
+    Assumes all registrant ID checks have been done.
+    '''
+
+    # write to postgres, getting an OID back if needed.
+    cur = conn.cursor()
+    if oid is None:
+        cur.execute("INSERT INTO object (data, registrant_id) VALUES (%(data)s, %(registrant_id)s) RETURNING id", {"data" : obj, "registrant_id" : registrant_id})
+        oid = cur.fetchone()[0]
+        conn.commit()
+    else:
+        cur.execute("UPDATE object SET data=%(data)s WHERE id=%(oid)s", {"data" : obj, "oid": oid})
+        conn.commit()
+
+    # also write it to ES
+    obj = json.loads(obj)
+    obj['_id'] = oid
+    obj['askem_id'] = oid
+    obj['_xdd_created'] = datetime.now()
+    obj['_xdd_registrant'] = registrant_id
+    check = app.retriever.add_object(obj)
+    if check != 0:
+        return (-1,oid)
+    return (0,oid)
 
 if "POSTGRES_HOST" in os.environ:
     host = os.environ["POSTGRES_HOST"]
@@ -112,7 +141,8 @@ def require_apikey(fcn):
     def decorated_function(*args, **kwargs):
         headers = request.headers
         api_key = headers.get('x-api-key', default = None)
-        if len(request.args) == 0 and len(args) == 0 and len(kwargs) == 0: # if bare request, show the helptext even without an API key
+        if request.method == "GET" and len(request.args) == 0 and len(args) == 0 and len(kwargs) == 0: # if bare request, show the helptext even without an API key
+            logging.info("Aha!")
             return fcn(*args, **kwargs)
         if api_key is None:
             api_key = request.args.get('api_key', default=None)
@@ -126,9 +156,8 @@ def require_apikey(fcn):
                     }
                     }
         registrant_id = get_registrant_id(api_key)
+        logging.info(f"api key of {api_key}, registrant of {registrant_id}")
         if registrant_id is None:
-            cur.close()
-            conn.close()
             return {"error" :
                     {"message" : "Provided API key not allowed to reserve ASKE-IDs!",
                         "v": VERSION,
@@ -183,23 +212,12 @@ def create():
         objects = [objects]
     for obj in objects:
         obj = json.dumps(obj)
-        # TODO: reserve IDs, then do things indentically to the register route.
         try:
-            # TODO: ---- this can all be refactored ---
-            cur.execute("INSERT INTO object (data, registrant_id) VALUES (%(data)s, %(registrant_id)s) RETURNING id", {"data" : obj, "registrant_id" : reg_id})
-            oid = cur.fetchone()[0]
-            conn.commit()
-            registered.append(oid)
-
-            # also write it to ES
-            obj = json.loads(obj)
-            obj['_id'] = oid
-            obj['askem_id'] = oid
-            obj['_xdd_created'] = datetime.now()
-            obj['_xdd_registrant'] = reg_id
-            app.retriever.add_object(obj)
-            # TODO: ---- this can all be refactored ---
-
+            success, oid = save_object(None, obj, reg_id, conn)
+            if success == -1:
+                return {"error" : f"Could not create object with ID {oid} in xDD indexer!"}
+            else:
+                registered.append(oid)
         except:
             logging.info(f"Couldn't register {obj}.")
             logging.info(sys.exc_info())
@@ -275,20 +293,11 @@ def register():
             cur.execute("SELECT r.id FROM registrant r, object o WHERE o.registrant_id=r.id AND r.api_key=%(api_key)s AND o.id=%(oid)s", {"api_key" : api_key, "oid" : oid})
             registrant_id = cur.fetchone()[0] # we can get this otherwise, but we need to check the object_id/registrant_id validity
             if registrant_id is None:
-                continue
-    #            return {"error" : "Provided API key not allowed to register this ASKE-ID!"}
+                return {"error" : f"Provided API key not allowed to register {oid}!"}
             obj = json.dumps(obj)
-            cur.execute("UPDATE object SET data=%(data)s WHERE id=%(oid)s", {"data" : obj, "oid": oid})
-            conn.commit()
-            # INSERT, since Elasticserach doesn't know about claimed, but unused, aske-ids
-            obj = json.loads(obj)
-            obj['_id'] = oid
-            obj['askem_id'] = oid
-            obj['_xdd_created'] = datetime.now()
-            obj['_xdd_registrant'] = get_registrant_id(api_key)
-            check = app.retriever.add_object(obj)
-            if check == 1:
-                logging.warning("Issue writing to ES for some reason!")
+            success, oid = save_object(oid, obj, registrant_id, conn)
+            if success == -1:
+                return {"error" : f"Could not register object with ID {oid} in xDD indexer!"}
             else:
                 registered.append(oid)
         except:
