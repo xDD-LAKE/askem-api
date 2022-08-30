@@ -1,23 +1,16 @@
-from flask import Flask, request, abort, Blueprint
-from flask import jsonify
-from flask_cors import CORS
-import logging
-import glob
 import os
 import sys
-import uuid
-import random
+import logging
 from datetime import datetime
-import subprocess
-from threading import Thread
 import json
+from uuid import uuid4, UUID
+from typing import Type
+from functools import wraps
 import psycopg2
 from psycopg2.extras import execute_values
-from uuid import uuid4, UUID
-import base64
-from typing import Type
-from collections import OrderedDict
-from functools import wraps
+from flask import Flask, request, Blueprint
+from flask import jsonify
+from flask_cors import CORS
 from elastic_retriever import ElasticRetriever
 import routes
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.DEBUG)
@@ -40,8 +33,7 @@ def get_registrant_id(api_key):
     registrant_id = cur.fetchone()
     if registrant_id is None:
         return None
-    else:
-        return registrant_id[0]
+    return registrant_id[0]
 
 def table_exists(cur, table_name):
     """
@@ -55,8 +47,6 @@ def table_exists(cur, table_name):
         logging.info(table[0])
         if table_name == table[0]:
             return True
-        else:
-            continue
     return False
 
 def save_object(oid: UUID, obj: dict, registrant_id:UUID, conn:Type[psycopg2.extensions.connection]) -> tuple:
@@ -146,7 +136,6 @@ def require_apikey(fcn):
             return fcn(*args, **kwargs)
         if api_key is None:
             api_key = request.args.get('api_key', default=None)
-            logging.info(f"got api_key from request.args")
         if api_key is None:
             return {"error" :
                     {
@@ -156,7 +145,6 @@ def require_apikey(fcn):
                     }
                     }
         registrant_id = get_registrant_id(api_key)
-        logging.info(f"api key of {api_key}, registrant of {registrant_id}")
         if registrant_id is None:
             return {"error" :
                     {"message" : "Provided API key not allowed to reserve ASKE-IDs!",
@@ -164,8 +152,7 @@ def require_apikey(fcn):
                         "about" : ",,,"
                         }
                     }
-        else:
-            return fcn(*args, **kwargs)
+        return fcn(*args, **kwargs)
     return decorated_function
 
 
@@ -174,19 +161,17 @@ def require_apikey(fcn):
 @bp.route('/object/<object_id>')
 @bp.route('/object/<object_id>/')
 @response
-def object(object_id):
+def get_object(object_id):
     metadata_type = request.args.get('metadata_type', type=str)
     if object_id is None:
         if metadata_type is not None:
             logging.info("Searching by metadata type")
             res = app.retriever.search_metadata(metadata_type=metadata_type)
             return res
-        else:
-            return routes.helptext['object']
-    else :
-        res = app.retriever.get_object(object_id)
-        logging.info(f"res type {type(res)}")
-        return [res]
+        return routes.helptext['object']
+    res = app.retriever.get_object(object_id)
+    logging.info(f"res type {type(res)}")
+    return [res]
 
 @bp.route('/create', methods=["POST", "GET"])
 @response
@@ -216,8 +201,7 @@ def create():
             success, oid = save_object(None, obj, reg_id, conn)
             if success == -1:
                 return {"error" : f"Could not create object with ID {oid} in xDD indexer!"}
-            else:
-                registered.append(oid)
+            registered.append(oid)
         except:
             logging.info(f"Couldn't register {obj}.")
             logging.info(sys.exc_info())
@@ -275,8 +259,6 @@ def register():
     api_key = headers.get('x-api-key', default = None)
     if api_key is None:
         api_key = request.args.get('api_key', default=None)
-        logging.info(f"got api_key from request.args")
-
     try:
         objects = request.get_json()
     except:
@@ -298,8 +280,7 @@ def register():
             success, oid = save_object(oid, obj, registrant_id, conn)
             if success == -1:
                 return {"error" : f"Could not register object with ID {oid} in xDD indexer!"}
-            else:
-                registered.append(oid)
+            registered.append(oid)
         except:
             logging.info(f"Couldn't register {oid}.")
             logging.info(sys.exc_info())
