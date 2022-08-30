@@ -24,7 +24,7 @@ logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 app.url_map.strict_slashes = False
-app.retriever=ElasticRetriever(hosts=os.environ.get('ELASTIC_ADDRESS', "es01:9200"))
+app.retriever=ElasticRetriever(hosts=os.environ.get('ES_HOST', "es01:9200"))
 bp = Blueprint('xDD-askem-api', __name__)
 
 # TODO: get ride of this obvious placeholder
