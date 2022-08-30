@@ -47,8 +47,16 @@ class ElasticRetriever(Retriever):
         response = s.execute()
         return response
 
-    def search_metadata(self, metadata_type: str = "") -> dict:
-        q = Q('match', metadata__metadata_type=metadata_type)
+    def search_metadata(self, metadata_type: str = "", source_title: str = "",
+            provenance_method: str = "") -> dict:
+        q = Q()
+        if metadata_type:
+            q = q & Q('match', metadata__metadata_type=metadata_type)
+        if source_title:
+            q = q & Q('match_phrase', metadata__documents__bibjson__title=source_title)
+        if provenance_method:
+            q = q & Q('match_phrase', metadata__provenance__method=provenance_method)
+        logger.info(q.to_dict())
         s = Search(index='gromet-fn')
         s = s.query(q)
         response = s.execute()

@@ -162,11 +162,16 @@ def require_apikey(fcn):
 @bp.route('/object/<object_id>/')
 @response
 def get_object(object_id):
-    metadata_type = request.args.get('metadata_type', type=str)
+    metadata_type = request.args.get('metadata_type', type=str, default="")
+    source_title = request.args.get('source_title', type=str, default="")
+    provenance_method = request.args.get('provenance_method', type=str, default="")
+
     if object_id is None:
         if metadata_type is not None:
             logging.info("Searching by metadata type")
-            res = app.retriever.search_metadata(metadata_type=metadata_type)
+            res = app.retriever.search_metadata(metadata_type=metadata_type,
+                    source_title=source_title,
+                    provenance_method=provenance_method)
             return res
         return routes.helptext['object']
     res = app.retriever.get_object(object_id)
