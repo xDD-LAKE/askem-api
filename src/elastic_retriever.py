@@ -6,6 +6,7 @@ from elasticsearch_dsl import Document, Text, connections, Integer, Date, Float,
 from elasticsearch.helpers import bulk
 from datetime import datetime
 import sys
+import os
 import glob
 import json
 import hashlib
@@ -25,6 +26,7 @@ def upsert(doc: Document) -> dict:
     del d['_source']
     return d
 
+
 class GrometFN(Document):
     class Index:
         name='gromet-fn'
@@ -33,10 +35,12 @@ class GrometFN(Document):
 
 class ElasticRetriever(Retriever):
     def __init__(self, hosts=['localhost']):
-        self.hosts = hosts
+        if os.path.exists("/mnt/es_certs"):
+            connections.create_connection(hosts=hosts, timeout=100, alias="default", use_ssl=True, verify_certs=True, ca_certs="/mnt/es_certs/ca.crt",  http_auth=(os.getenv("ES_USER"), os.getenv("ES_PASSWORD")))
+        else:
+            connections.create_connection(hosts=hosts, timeout=100)
 
     def search(self, query: dict) -> dict:
-        connections.create_connection(hosts=self.hosts, timeout=20)
         doc_filter = False
         s = Search(index='gromet-fn')
         s = s.query(query)
@@ -44,7 +48,6 @@ class ElasticRetriever(Retriever):
         return response
 
     def search_metadata(self, metadata_type: str = "") -> dict:
-        connections.create_connection(hosts=self.hosts, timeout=20)
         q = Q('match', metadata__metadata_type=metadata_type)
         s = Search(index='gromet-fn')
         s = s.query(q)
@@ -55,7 +58,6 @@ class ElasticRetriever(Retriever):
 
 
     def get_object(self, id: str):
-        connections.create_connection(hosts=self.hosts)
         try:
             obj = GrometFN.get(id=id).to_dict()
         except:
@@ -65,8 +67,6 @@ class ElasticRetriever(Retriever):
 
     def build_index(self, input_dir):
         logger.info('Building elastic index')
-        connections.create_connection(hosts=self.hosts)
-
         es= connections.get_connection()
         if not es.indices.exists("gromet-fn"):
                 mapping = {
@@ -101,7 +101,6 @@ class ElasticRetriever(Retriever):
         bulk(connections.get_connection(), [upsert(d) for d in to_ingest])
 
     def add_object(self, data: dict) -> int:
-        connections.create_connection(hosts=self.hosts, timeout=20)
         # TODO (eventually) : check data consistency
         test = GrometFN(**data)
         try:
@@ -116,7 +115,6 @@ class ElasticRetriever(Retriever):
         Assume that we're just appending to existing metadata?
         Can users delete metadata?
         '''
-        connections.create_connection(hosts=self.hosts, timeout=20)
 
         # TODO Get object
         # TODO append to _xdd_modified
@@ -125,7 +123,6 @@ class ElasticRetriever(Retriever):
         raise NotImplementedError('TODO')
 
     def count(self, index:str):
-        connections.create_connection(hosts=self.hosts)
         s = Search(index=index)
         return s.count()
 
