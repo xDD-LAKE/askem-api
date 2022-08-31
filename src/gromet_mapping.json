@@ -1,646 +1,642 @@
 {
-  "gromet-fn" : {
-    "mappings" : {
-      "properties" : {
+    "properties" : {
         "attributes" : {
-          "properties" : {
-            "type" : {
-              "type" : "text",
-              "fields" : {
-                "keyword" : {
-                  "type" : "keyword",
-                  "ignore_above" : 256
+            "properties" : {
+                "type" : {
+                    "type" : "text",
+                    "fields" : {
+                        "keyword" : {
+                            "type" : "keyword",
+                            "ignore_above" : 256
+                        }
+                    }
+                },
+                "value" : {
+                    "properties" : {
+                        "b" : {
+                            "properties" : {
+                                "function_type" : {
+                                    "type" : "text",
+                                    "fields" : {
+                                        "keyword" : {
+                                            "type" : "keyword",
+                                            "ignore_above" : 256
+                                        }
+                                    }
+                                },
+                                "metadata" : {
+                                    "properties" : {
+                                        "code_file_reference_uid" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        },
+                                        "col_begin" : {
+                                            "type" : "long"
+                                        },
+                                        "col_end" : {
+                                            "type" : "long"
+                                        },
+                                        "line_begin" : {
+                                            "type" : "long"
+                                        },
+                                        "line_end" : {
+                                            "type" : "long"
+                                        },
+                                        "metadata_type" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        },
+                                        "provenance" : {
+                                            "properties" : {
+                                                "method" : {
+                                                    "type" : "text",
+                                                    "fields" : {
+                                                        "keyword" : {
+                                                            "type" : "keyword",
+                                                            "ignore_above" : 256
+                                                        }
+                                                    }
+                                                },
+                                                "timestamp" : {
+                                                    "type" : "text",
+                                                    "fields" : {
+                                                        "keyword" : {
+                                                            "type" : "keyword",
+                                                            "ignore_above" : 256
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "name" : {
+                                    "type" : "text",
+                                    "fields" : {
+                                        "keyword" : {
+                                            "type" : "keyword",
+                                            "ignore_above" : 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "bf" : {
+                            "properties" : {
+                                "contents" : {
+                                    "type" : "long"
+                                },
+                                "function_type" : {
+                                    "type" : "text",
+                                    "fields" : {
+                                        "keyword" : {
+                                            "type" : "keyword",
+                                            "ignore_above" : 256
+                                        }
+                                    }
+                                },
+                                "metadata" : {
+                                    "properties" : {
+                                        "code_file_reference_uid" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        },
+                                        "col_begin" : {
+                                            "type" : "long"
+                                        },
+                                        "col_end" : {
+                                            "type" : "long"
+                                        },
+                                        "line_begin" : {
+                                            "type" : "long"
+                                        },
+                                        "line_end" : {
+                                            "type" : "long"
+                                        },
+                                        "metadata_type" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        },
+                                        "provenance" : {
+                                            "properties" : {
+                                                "method" : {
+                                                    "type" : "text",
+                                                    "fields" : {
+                                                        "keyword" : {
+                                                            "type" : "keyword",
+                                                            "ignore_above" : 256
+                                                        }
+                                                    }
+                                                },
+                                                "timestamp" : {
+                                                    "type" : "text",
+                                                    "fields" : {
+                                                        "keyword" : {
+                                                            "type" : "keyword",
+                                                            "ignore_above" : 256
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "value" : {
+                                    "properties" : {
+                                        "value" : {
+                                            "type" : "long"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "opi" : {
+                            "properties" : {
+                                "box" : {
+                                    "type" : "long"
+                                },
+                                "id" : {
+                                    "type" : "long"
+                                },
+                                "metadata" : {
+                                    "properties" : {
+                                        "code_file_reference_uid" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        },
+                                        "col_begin" : {
+                                            "type" : "long"
+                                        },
+                                        "col_end" : {
+                                            "type" : "long"
+                                        },
+                                        "line_begin" : {
+                                            "type" : "long"
+                                        },
+                                        "line_end" : {
+                                            "type" : "long"
+                                        },
+                                        "metadata_type" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        },
+                                        "provenance" : {
+                                            "properties" : {
+                                                "method" : {
+                                                    "type" : "text",
+                                                    "fields" : {
+                                                        "keyword" : {
+                                                            "type" : "keyword",
+                                                            "ignore_above" : 256
+                                                        }
+                                                    }
+                                                },
+                                                "timestamp" : {
+                                                    "type" : "text",
+                                                    "fields" : {
+                                                        "keyword" : {
+                                                            "type" : "keyword",
+                                                            "ignore_above" : 256
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "name" : {
+                                    "type" : "text",
+                                    "fields" : {
+                                        "keyword" : {
+                                            "type" : "keyword",
+                                            "ignore_above" : 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "opo" : {
+                            "properties" : {
+                                "box" : {
+                                    "type" : "long"
+                                },
+                                "id" : {
+                                    "type" : "long"
+                                }
+                            }
+                        },
+                        "pif" : {
+                            "properties" : {
+                                "box" : {
+                                    "type" : "long"
+                                },
+                                "id" : {
+                                    "type" : "long"
+                                }
+                            }
+                        },
+                        "pof" : {
+                            "properties" : {
+                                "box" : {
+                                    "type" : "long"
+                                },
+                                "id" : {
+                                    "type" : "long"
+                                },
+                                "name" : {
+                                    "type" : "text",
+                                    "fields" : {
+                                        "keyword" : {
+                                            "type" : "keyword",
+                                            "ignore_above" : 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "wff" : {
+                            "properties" : {
+                                "src" : {
+                                    "type" : "long"
+                                },
+                                "tgt" : {
+                                    "type" : "long"
+                                }
+                            }
+                        },
+                        "wfopi" : {
+                            "properties" : {
+                                "src" : {
+                                    "type" : "long"
+                                },
+                                "tgt" : {
+                                    "type" : "long"
+                                }
+                            }
+                        },
+                        "wfopo" : {
+                            "properties" : {
+                                "src" : {
+                                    "type" : "long"
+                                },
+                                "tgt" : {
+                                    "type" : "long"
+                                }
+                            }
+                        }
+                    }
                 }
-              }
-            },
-            "value" : {
-              "properties" : {
-                "b" : {
-                  "properties" : {
-                    "function_type" : {
-                      "type" : "text",
-                      "fields" : {
-                        "keyword" : {
-                          "type" : "keyword",
-                          "ignore_above" : 256
-                        }
-                      }
-                    },
-                    "metadata" : {
-                      "properties" : {
-                        "code_file_reference_uid" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
-                            }
-                          }
-                        },
-                        "col_begin" : {
-                          "type" : "long"
-                        },
-                        "col_end" : {
-                          "type" : "long"
-                        },
-                        "line_begin" : {
-                          "type" : "long"
-                        },
-                        "line_end" : {
-                          "type" : "long"
-                        },
-                        "metadata_type" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
-                            }
-                          }
-                        },
-                        "provenance" : {
-                          "properties" : {
-                            "method" : {
-                              "type" : "text",
-                              "fields" : {
-                                "keyword" : {
-                                  "type" : "keyword",
-                                  "ignore_above" : 256
-                                }
-                              }
-                            },
-                            "timestamp" : {
-                              "type" : "text",
-                              "fields" : {
-                                "keyword" : {
-                                  "type" : "keyword",
-                                  "ignore_above" : 256
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    },
-                    "name" : {
-                      "type" : "text",
-                      "fields" : {
-                        "keyword" : {
-                          "type" : "keyword",
-                          "ignore_above" : 256
-                        }
-                      }
-                    }
-                  }
-                },
-                "bf" : {
-                  "properties" : {
-                    "contents" : {
-                      "type" : "long"
-                    },
-                    "function_type" : {
-                      "type" : "text",
-                      "fields" : {
-                        "keyword" : {
-                          "type" : "keyword",
-                          "ignore_above" : 256
-                        }
-                      }
-                    },
-                    "metadata" : {
-                      "properties" : {
-                        "code_file_reference_uid" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
-                            }
-                          }
-                        },
-                        "col_begin" : {
-                          "type" : "long"
-                        },
-                        "col_end" : {
-                          "type" : "long"
-                        },
-                        "line_begin" : {
-                          "type" : "long"
-                        },
-                        "line_end" : {
-                          "type" : "long"
-                        },
-                        "metadata_type" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
-                            }
-                          }
-                        },
-                        "provenance" : {
-                          "properties" : {
-                            "method" : {
-                              "type" : "text",
-                              "fields" : {
-                                "keyword" : {
-                                  "type" : "keyword",
-                                  "ignore_above" : 256
-                                }
-                              }
-                            },
-                            "timestamp" : {
-                              "type" : "text",
-                              "fields" : {
-                                "keyword" : {
-                                  "type" : "keyword",
-                                  "ignore_above" : 256
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    },
-                    "value" : {
-                      "properties" : {
-                        "value" : {
-                          "type" : "long"
-                        }
-                      }
-                    }
-                  }
-                },
-                "opi" : {
-                  "properties" : {
-                    "box" : {
-                      "type" : "long"
-                    },
-                    "id" : {
-                      "type" : "long"
-                    },
-                    "metadata" : {
-                      "properties" : {
-                        "code_file_reference_uid" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
-                            }
-                          }
-                        },
-                        "col_begin" : {
-                          "type" : "long"
-                        },
-                        "col_end" : {
-                          "type" : "long"
-                        },
-                        "line_begin" : {
-                          "type" : "long"
-                        },
-                        "line_end" : {
-                          "type" : "long"
-                        },
-                        "metadata_type" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
-                            }
-                          }
-                        },
-                        "provenance" : {
-                          "properties" : {
-                            "method" : {
-                              "type" : "text",
-                              "fields" : {
-                                "keyword" : {
-                                  "type" : "keyword",
-                                  "ignore_above" : 256
-                                }
-                              }
-                            },
-                            "timestamp" : {
-                              "type" : "text",
-                              "fields" : {
-                                "keyword" : {
-                                  "type" : "keyword",
-                                  "ignore_above" : 256
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    },
-                    "name" : {
-                      "type" : "text",
-                      "fields" : {
-                        "keyword" : {
-                          "type" : "keyword",
-                          "ignore_above" : 256
-                        }
-                      }
-                    }
-                  }
-                },
-                "opo" : {
-                  "properties" : {
-                    "box" : {
-                      "type" : "long"
-                    },
-                    "id" : {
-                      "type" : "long"
-                    }
-                  }
-                },
-                "pif" : {
-                  "properties" : {
-                    "box" : {
-                      "type" : "long"
-                    },
-                    "id" : {
-                      "type" : "long"
-                    }
-                  }
-                },
-                "pof" : {
-                  "properties" : {
-                    "box" : {
-                      "type" : "long"
-                    },
-                    "id" : {
-                      "type" : "long"
-                    },
-                    "name" : {
-                      "type" : "text",
-                      "fields" : {
-                        "keyword" : {
-                          "type" : "keyword",
-                          "ignore_above" : 256
-                        }
-                      }
-                    }
-                  }
-                },
-                "wff" : {
-                  "properties" : {
-                    "src" : {
-                      "type" : "long"
-                    },
-                    "tgt" : {
-                      "type" : "long"
-                    }
-                  }
-                },
-                "wfopi" : {
-                  "properties" : {
-                    "src" : {
-                      "type" : "long"
-                    },
-                    "tgt" : {
-                      "type" : "long"
-                    }
-                  }
-                },
-                "wfopo" : {
-                  "properties" : {
-                    "src" : {
-                      "type" : "long"
-                    },
-                    "tgt" : {
-                      "type" : "long"
-                    }
-                  }
-                }
-              }
             }
-          }
         },
         "fn" : {
-          "properties" : {
-            "b" : {
-              "properties" : {
-                "function_type" : {
-                  "type" : "text",
-                  "fields" : {
-                    "keyword" : {
-                      "type" : "keyword",
-                      "ignore_above" : 256
-                    }
-                  }
-                },
-                "metadata" : {
-                  "properties" : {
-                    "code_file_reference_uid" : {
-                      "type" : "text",
-                      "fields" : {
-                        "keyword" : {
-                          "type" : "keyword",
-                          "ignore_above" : 256
-                        }
-                      }
-                    },
-                    "line_begin" : {
-                      "type" : "long"
-                    },
-                    "line_end" : {
-                      "type" : "long"
-                    },
-                    "metadata_type" : {
-                      "type" : "text",
-                      "fields" : {
-                        "keyword" : {
-                          "type" : "keyword",
-                          "ignore_above" : 256
-                        }
-                      }
-                    },
-                    "provenance" : {
-                      "properties" : {
-                        "method" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
+            "properties" : {
+                "b" : {
+                    "properties" : {
+                        "function_type" : {
+                            "type" : "text",
+                            "fields" : {
+                                "keyword" : {
+                                    "type" : "keyword",
+                                    "ignore_above" : 256
+                                }
                             }
-                          }
                         },
-                        "timestamp" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
+                        "metadata" : {
+                            "properties" : {
+                                "code_file_reference_uid" : {
+                                    "type" : "text",
+                                    "fields" : {
+                                        "keyword" : {
+                                            "type" : "keyword",
+                                            "ignore_above" : 256
+                                        }
+                                    }
+                                },
+                                "line_begin" : {
+                                    "type" : "long"
+                                },
+                                "line_end" : {
+                                    "type" : "long"
+                                },
+                                "metadata_type" : {
+                                    "type" : "text",
+                                    "fields" : {
+                                        "keyword" : {
+                                            "type" : "keyword",
+                                            "ignore_above" : 256
+                                        }
+                                    }
+                                },
+                                "provenance" : {
+                                    "properties" : {
+                                        "method" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        },
+                                        "timestamp" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                          }
+                        },
+                        "name" : {
+                            "type" : "text",
+                            "fields" : {
+                                "keyword" : {
+                                    "type" : "keyword",
+                                    "ignore_above" : 256
+                                }
+                            }
                         }
-                      }
                     }
-                  }
                 },
-                "name" : {
-                  "type" : "text",
-                  "fields" : {
-                    "keyword" : {
-                      "type" : "keyword",
-                      "ignore_above" : 256
+                "bf" : {
+                    "properties" : {
+                        "contents" : {
+                            "type" : "long"
+                        },
+                        "function_type" : {
+                            "type" : "text",
+                            "fields" : {
+                                "keyword" : {
+                                    "type" : "keyword",
+                                    "ignore_above" : 256
+                                }
+                            }
+                        },
+                        "name" : {
+                            "type" : "text",
+                            "fields" : {
+                                "keyword" : {
+                                    "type" : "keyword",
+                                    "ignore_above" : 256
+                                }
+                            }
+                        }
                     }
-                  }
                 }
-              }
-            },
-            "bf" : {
-              "properties" : {
-                "contents" : {
-                  "type" : "long"
-                },
-                "function_type" : {
-                  "type" : "text",
-                  "fields" : {
-                    "keyword" : {
-                      "type" : "keyword",
-                      "ignore_above" : 256
-                    }
-                  }
-                },
-                "name" : {
-                  "type" : "text",
-                  "fields" : {
-                    "keyword" : {
-                      "type" : "keyword",
-                      "ignore_above" : 256
-                    }
-                  }
-                }
-              }
             }
-          }
         },
         "metadata" : {
-          "properties" : {
-            "documents" : {
-              "properties" : {
-                "bibjson" : {
-                  "properties" : {
-                    "author" : {
-                      "properties" : {
-                        "name" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
+            "properties" : {
+                "documents" : {
+                    "properties" : {
+                        "bibjson" : {
+                            "properties" : {
+                                "author" : {
+                                    "properties" : {
+                                        "name" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "identifier" : {
+                                    "properties" : {
+                                        "id" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        },
+                                        "type" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "link" : {
+                                    "properties" : {
+                                        "location" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        },
+                                        "type" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "timestamp" : {
+                                    "type" : "date"
+                                },
+                                "title" : {
+                                    "type" : "text",
+                                    "fields" : {
+                                        "keyword" : {
+                                            "type" : "keyword",
+                                            "ignore_above" : 256
+                                        }
+                                    }
+                                },
+                                "type" : {
+                                    "type" : "text",
+                                    "fields" : {
+                                        "keyword" : {
+                                            "type" : "keyword",
+                                            "ignore_above" : 256
+                                        }
+                                    }
+                                },
+                                "website" : {
+                                    "properties" : {
+                                        "location" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        },
+                                        "type" : {
+                                            "type" : "text",
+                                            "fields" : {
+                                                "keyword" : {
+                                                    "type" : "keyword",
+                                                    "ignore_above" : 256
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                          }
-                        }
-                      }
-                    },
-                    "identifier" : {
-                      "properties" : {
-                        "id" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
-                            }
-                          }
                         },
-                        "type" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
+                        "global_reference_id" : {
+                            "type" : "text",
+                            "fields" : {
+                                "keyword" : {
+                                    "type" : "keyword",
+                                    "ignore_above" : 256
+                                }
                             }
-                          }
-                        }
-                      }
-                    },
-                    "link" : {
-                      "properties" : {
-                        "location" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
-                            }
-                          }
                         },
-                        "type" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
+                        "uid" : {
+                            "type" : "text",
+                            "fields" : {
+                                "keyword" : {
+                                    "type" : "keyword",
+                                    "ignore_above" : 256
+                                }
                             }
-                          }
                         }
-                      }
-                    },
-                    "timestamp" : {
-                      "type" : "date"
-                    },
-                    "title" : {
-                      "type" : "text",
-                      "fields" : {
-                        "keyword" : {
-                          "type" : "keyword",
-                          "ignore_above" : 256
-                        }
-                      }
-                    },
-                    "type" : {
-                      "type" : "text",
-                      "fields" : {
-                        "keyword" : {
-                          "type" : "keyword",
-                          "ignore_above" : 256
-                        }
-                      }
-                    },
-                    "website" : {
-                      "properties" : {
-                        "location" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
-                            }
-                          }
-                        },
-                        "type" : {
-                          "type" : "text",
-                          "fields" : {
-                            "keyword" : {
-                              "type" : "keyword",
-                              "ignore_above" : 256
-                            }
-                          }
-                        }
-                      }
                     }
-                  }
+                },
+                "files" : {
+                    "properties" : {
+                        "name" : {
+                            "type" : "text",
+                            "fields" : {
+                                "keyword" : {
+                                    "type" : "keyword",
+                                    "ignore_above" : 256
+                                }
+                            }
+                        },
+                        "path" : {
+                            "type" : "text",
+                            "fields" : {
+                                "keyword" : {
+                                    "type" : "keyword",
+                                    "ignore_above" : 256
+                                }
+                            }
+                        },
+                        "uid" : {
+                            "type" : "text",
+                            "fields" : {
+                                "keyword" : {
+                                    "type" : "keyword",
+                                    "ignore_above" : 256
+                                }
+                            }
+                        }
+                    }
                 },
                 "global_reference_id" : {
-                  "type" : "text",
-                  "fields" : {
-                    "keyword" : {
-                      "type" : "keyword",
-                      "ignore_above" : 256
+                    "type" : "text",
+                    "fields" : {
+                        "keyword" : {
+                            "type" : "keyword",
+                            "ignore_above" : 256
+                        }
                     }
-                  }
                 },
-                "uid" : {
-                  "type" : "text",
-                  "fields" : {
-                    "keyword" : {
-                      "type" : "keyword",
-                      "ignore_above" : 256
+                "metadata_type" : {
+                    "type" : "text",
+                    "fields" : {
+                        "keyword" : {
+                            "type" : "keyword",
+                            "ignore_above" : 256
+                        }
                     }
-                  }
-                }
-              }
-            },
-            "files" : {
-              "properties" : {
+                },
                 "name" : {
-                  "type" : "text",
-                  "fields" : {
-                    "keyword" : {
-                      "type" : "keyword",
-                      "ignore_above" : 256
+                    "type" : "text",
+                    "fields" : {
+                        "keyword" : {
+                            "type" : "keyword",
+                            "ignore_above" : 256
+                        }
                     }
-                  }
                 },
-                "path" : {
-                  "type" : "text",
-                  "fields" : {
-                    "keyword" : {
-                      "type" : "keyword",
-                      "ignore_above" : 256
+                "provenance" : {
+                    "properties" : {
+                        "method" : {
+                            "type" : "text",
+                            "fields" : {
+                                "keyword" : {
+                                    "type" : "keyword",
+                                    "ignore_above" : 256
+                                }
+                            }
+                        },
+                        "timestamp" : {
+                            "type" : "text",
+                            "fields" : {
+                                "keyword" : {
+                                    "type" : "keyword",
+                                    "ignore_above" : 256
+                                }
+                            }
+                        }
                     }
-                  }
-                },
-                "uid" : {
-                  "type" : "text",
-                  "fields" : {
-                    "keyword" : {
-                      "type" : "keyword",
-                      "ignore_above" : 256
-                    }
-                  }
                 }
-              }
-            },
-            "global_reference_id" : {
-              "type" : "text",
-              "fields" : {
-                "keyword" : {
-                  "type" : "keyword",
-                  "ignore_above" : 256
-                }
-              }
-            },
-            "metadata_type" : {
-              "type" : "text",
-              "fields" : {
-                "keyword" : {
-                  "type" : "keyword",
-                  "ignore_above" : 256
-                }
-              }
-            },
-            "name" : {
-              "type" : "text",
-              "fields" : {
-                "keyword" : {
-                  "type" : "keyword",
-                  "ignore_above" : 256
-                }
-              }
-            },
-            "provenance" : {
-              "properties" : {
-                "method" : {
-                  "type" : "text",
-                  "fields" : {
-                    "keyword" : {
-                      "type" : "keyword",
-                      "ignore_above" : 256
-                    }
-                  }
-                },
-                "timestamp" : {
-                  "type" : "text",
-                  "fields" : {
-                    "keyword" : {
-                      "type" : "keyword",
-                      "ignore_above" : 256
-                    }
-                  }
-                }
-              }
             }
-          }
         },
         "name" : {
-          "type" : "text",
-          "fields" : {
-            "keyword" : {
-              "type" : "keyword",
-              "ignore_above" : 256
+            "type" : "text",
+            "fields" : {
+                "keyword" : {
+                    "type" : "keyword",
+                    "ignore_above" : 256
+                }
             }
-          }
         }
-      }
     }
-  }
 }
