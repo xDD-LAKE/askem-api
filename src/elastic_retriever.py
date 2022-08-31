@@ -67,6 +67,9 @@ class ElasticRetriever(Retriever):
 
     def get_object(self, id: str):
         try:
+            if id=="all":
+                s = Search(index='gromet-fn')
+                return [e.to_dict() for e in s.scan()]
             obj = GrometFN.get(id=id).to_dict()
         except:
             logger.warning(f"Couldn't get GrometFN with id {id}!")

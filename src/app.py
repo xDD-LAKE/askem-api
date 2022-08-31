@@ -165,6 +165,8 @@ def get_object(object_id):
     metadata_type = request.args.get('metadata_type', type=str, default="")
     source_title = request.args.get('source_title', type=str, default="")
     provenance_method = request.args.get('provenance_method', type=str, default="")
+    if "all" in request.args:
+        object_id = "all"
 
     if object_id is None:
         if metadata_type is not None:
@@ -175,8 +177,9 @@ def get_object(object_id):
             return res
         return routes.helptext['object']
     res = app.retriever.get_object(object_id)
-    logging.info(f"res type {type(res)}")
-    return [res]
+    if not isinstance(res, list):
+        res = [res]
+    return res
 
 @bp.route('/create', methods=["POST", "GET"])
 @response
