@@ -136,7 +136,6 @@ def require_apikey(fcn):
         headers = request.headers
         api_key = headers.get('x-api-key', default = None)
         if request.method == "GET" and len(request.args) == 0 and len(args) == 0 and len(kwargs) == 0: # if bare request, show the helptext even without an API key
-            logging.info("Aha!")
             return fcn(*args, **kwargs)
         if api_key is None:
             api_key = request.args.get('api_key', default=None)
@@ -144,16 +143,14 @@ def require_apikey(fcn):
             return {"error" :
                     {
                         "message" : "You must specify an API key!",
-                        "v" : VERSION,
-                        "about" : "..."
+                        "about" : routes.helptext[fcn.__name__]
                     }
                     }
         registrant_id = get_registrant_id(api_key)
         if registrant_id is None:
             return {"error" :
                     {"message" : "Provided API key not allowed to reserve ASKEM-IDs!",
-                        "v": VERSION,
-                        "about" : ",,,"
+                        "about" : routes.helptext[fcn.__name__]
                         }
                     }
         return fcn(*args, **kwargs)
