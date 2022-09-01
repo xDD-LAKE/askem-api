@@ -119,6 +119,10 @@ def response(fcn):
         tresult = fcn(*args, **kwargs)
         if "error" in tresult:
             result = {"error": {'v' : VERSION, 'message': tresult["error"], "about": routes.helptext[fcn.__name__], 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
+        elif fcn.__name__ == "index":
+            ver = {'v': VERSION}
+            lic = {'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}
+            result = {"success": {**ver, **tresult, **lic}}
         else:
             # TODO: this won't quite match the usual structure, since the "data" field implies successful request
             result = {"success": {'v' : VERSION, 'data': tresult, 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
@@ -147,7 +151,7 @@ def require_apikey(fcn):
         registrant_id = get_registrant_id(api_key)
         if registrant_id is None:
             return {"error" :
-                    {"message" : "Provided API key not allowed to reserve ASKE-IDs!",
+                    {"message" : "Provided API key not allowed to reserve ASKEM-IDs!",
                         "v": VERSION,
                         "about" : ",,,"
                         }
@@ -156,6 +160,19 @@ def require_apikey(fcn):
     return decorated_function
 
 
+
+@bp.route('/', methods=["GET"])
+@response
+def index():
+    return {
+                "description" : "API for reserving or registering JSON objects for storage within the xDD system.",
+                "routes": {
+                    f"/reserve" : "Reserve a block of ASKEM-IDs for later registration.",
+                    f"/register" : "Register a location for a reserved ASKEM-ID.",
+                    f"/create" : "Create and register ASKEM-IDs for existing resources.",
+                    f"/object" : "Retrieve or search for an object."
+                    }
+        }
 
 @bp.route('/object', defaults={'object_id': None})
 @bp.route('/object/<object_id>')
@@ -274,7 +291,7 @@ def register():
     try:
         objects = request.get_json()
     except:
-        return {"error" : "Invalid body! Registration expects a JSON object of the form [[<ASKE-ID>, <location>], [<ASKE-ID>, <location>]]."}
+        return {"error" : "Invalid body! Registration expects a JSON object of the form [[<ASKEM-ID>, <location>], [<ASKEM-ID>, <location>]]."}
 
     registered = []
     conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database=os.environ["POSTGRES_DB"])
