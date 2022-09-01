@@ -179,11 +179,12 @@ def index():
 @bp.route('/object/<object_id>/')
 @response
 def get_object(object_id):
-    if len(request.args) == 0:
+    if len(request.args) == 0 and object_id is None:
         return routes.helptext['object']
     metadata_type = request.args.get('metadata_type', type=str, default="")
     source_title = request.args.get('source_title', type=str, default="")
     provenance_method = request.args.get('provenance_method', type=str, default="")
+
     object_id = request.args.get('object_id', type=str, default=None) if object_id is None else object_id
 
     if "all" in request.args:
