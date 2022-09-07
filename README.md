@@ -1,6 +1,8 @@
 ```bash
+export API_KEY='PASTE_KEY_HERE'
+
 curl --location --request POST 'xdddev.chtc.io/askem/create' \
-	--header 'x-api-key: 3b919bb8-5cab-4d92-bf07-6538b658a829' \
+	--header 'x-api-key: $API_KEY' \
 	--header 'Content-Type: application/json' \
 	--data-raw '{
 	"data": "xyz",
