@@ -29,7 +29,7 @@ def upsert(doc: Document) -> dict:
 
 class GrometFN(Document):
     class Index:
-        name='gromet-fn'
+        name='gromet-fn-live'
     def get_id(self):
         return 1
 
@@ -42,7 +42,7 @@ class ElasticRetriever(Retriever):
 
     def search(self, query: dict) -> dict:
         doc_filter = False
-        s = Search(index='gromet-fn')
+        s = Search(index='gromet-fn-live')
         s = s.query(query)
         response = s.execute()
         return response
@@ -57,7 +57,7 @@ class ElasticRetriever(Retriever):
         if provenance_method:
             q = q & Q('match_phrase', metadata__provenance__method=provenance_method)
         logger.info(q.to_dict())
-        s = Search(index='gromet-fn')
+        s = Search(index='gromet-fn-live')
         s = s.query(q)
         response = s.execute()
         final_results = [r.meta.id for r in response]
@@ -68,7 +68,7 @@ class ElasticRetriever(Retriever):
     def get_object(self, id: str):
         try:
             if id=="all":
-                s = Search(index='gromet-fn')
+                s = Search(index='gromet-fn-live')
                 return [e.to_dict() for e in s.scan()]
             obj = GrometFN.get(id=id).to_dict()
         except:
@@ -79,7 +79,7 @@ class ElasticRetriever(Retriever):
     def build_index(self, input_dir):
         logger.info('Building elastic index')
         es= connections.get_connection()
-        if not es.indices.exists("gromet-fn"):
+        if not es.indices.exists("gromet-fn-live"):
                 mapping = {
                     "mappings": {
                         "_source" : { "enabled" : True },
@@ -88,7 +88,7 @@ class ElasticRetriever(Retriever):
                         }
                     }
                 # TODO: dump a real working mapping and use that
-                es.indices.create("gromet-fn", body=mapping) # TODO: put in settings.
+                es.indices.create("gromet-fn-live", body=mapping) # TODO: put in settings.
                 logger.info("Index initialized.")
 
         docs = glob.glob(f"{input_dir}/*.json")
