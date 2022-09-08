@@ -75,7 +75,11 @@ def save_object(oid: UUID, obj: dict, registrant_id:UUID, conn:Type[psycopg2.ext
         return (-1,oid)
     return (0,oid)
 
-if "POSTGRES_HOST" in os.environ:
+def check_path_exists(original, update):
+    pip 
+
+
+tif "POSTGRES_HOST" in os.environ:
     host = os.environ["POSTGRES_HOST"]
 else:
     host = 'aske-id-registration'
@@ -111,9 +115,19 @@ if not table_exists(ccur, "object"):
             data jsonb DEFAULT NULL
         );""")
     cconn.commit()
+
+if not table_exists(ccur, "update"):
+    ccur.execute("""
+        CREATE TABLE update (
+            id SERIAL PRIMARY KEY,
+            oid uuid REFERENCES object(id),
+            user_id integer REFERENCES registrant(id),
+            data jsonb DEFAULT NULL,
+            timestamp timestamp DEFAULT now()
+        );""")
+    cconn.commit()
 ccur.close()
 cconn.close()
-
 def response(fcn):
     def wrapper(*args, **kwargs):
         tresult = fcn(*args, **kwargs)
@@ -318,6 +332,79 @@ def register():
             "registered_ids" : registered
             }
             }
+
+@bp.route('/update', methods=["POST", "GET"])
+@response
+@require_apikey
+def update():
+    allowed_ops = ["ADD", "CHANGE", "DELETE", "APPEND"]
+    if request.method == "GET":
+        logging.info("???" + str(routes.helptext['update']))
+        return routes.helptext['update']
+
+    headers = request.headers
+    api_key = headers.get('x-api-key', default = None)
+    if api_key is None:
+        api_key = request.args.get('api_key', default=None)
+    try:
+        body = request.get_json()
+        assert "operation" in body and body['operation'] in allowed_ops
+        assert "id" in body
+        assert "data" in body
+    except:
+        logging.info(sys.exc_info())
+        logging.info(body)
+        return {"error" : f"Invalid body! Updating expects a JSON object of the form {{'id' : '<ASKEM-ID>', 'operation' : {str(allowed_ops)}, 'data': {{'field': 'value''}}}}'"}
+
+    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database=os.environ["POSTGRES_DB"])
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute("SELECT data FROM object WHERE id=%(oid)s", {"oid": body['id']})
+    logging.info(f"{body['operation']}-ing {body['id']} with {body['data']}")
+    old = cur.fetchone()[0]
+    if body["operation"] in ["ADD", "CHANGE"]: # functionally the same, but change should also check for the field existence to be sure that the user is aware that they're changing a thing..
+        check_path_exists(old, body['data'])
+        old.update(body["data"])
+
+    logging.info(old)
+
+
+
+#    old.update(data) will update the old dictionary.
+
+
+    # ADD - implies adding data to an array *OR* creating a new field
+
+    # TODO: Check for object existence.
+    # TODO: parse field nesting and check validity
+    # TODO: update JSON within postgres
+    # TODO: update JSON in elasticsearch
+    # TODO: write to updates table
+
+    try:
+        raise NotImplementedError
+#        cur.execute("SELECT r.id FROM registrant r, object o WHERE o.registrant_id=r.id AND r.api_key=%(api_key)s AND o.id=%(oid)s", {"api_key" : api_key, "oid" : oid})
+#        registrant_id = cur.fetchone()[0] # we can get this otherwise, but we need to check the object_id/registrant_id validity
+#        if registrant_id is None:
+#            return {"error" : f"Provided API key not allowed to register {oid}!"}
+#        obj = json.dumps(obj)
+#        success, oid = save_object(oid, obj, registrant_id, conn)
+#        if success == -1:
+#            return {"error" : f"Could not register object with ID {oid} in xDD indexer!"}
+#            registered.append(oid)
+        reg_id = get_registrant_id(api_key)
+        cur.execute("INSERT INTO update (user_id, oid, data) VALUES (%(regid)s, %(oid), %(data)s);", {"data" : body['data'], "oid": body['id'], "reg_id": reg_id})
+    except:
+        logging.info(f"Couldn't update {body['id']}.")
+        logging.info(sys.exc_info())
+        conn.commit()
+    cur.close()
+    conn.close()
+    return {"success" : body
+            }
+
+
+
 
 if 'PREFIX' in os.environ:
     logging.info(f"Stripping {os.environ['PREFIX']}")
