@@ -8,6 +8,7 @@ from datetime import datetime
 import sys
 import os
 import glob
+from mergedeep import merge
 import json
 import hashlib
 import logging
@@ -22,7 +23,7 @@ def upsert(doc: Document) -> dict:
     d['doc'] = d['_source']
     d['_index'] = doc.Index().name
     d['doc_as_upsert'] = True
-#    d['_id'] = str(doc.get_id())
+    d['_id'] = d["_source"].pop("id")
     del d['_source']
     return d
 
@@ -121,7 +122,7 @@ class ElasticRetriever(Retriever):
             return 1
         return 0
 
-    def modify_object(self, data:dict) -> int:
+    def modify_object(self, oid, data:dict) -> int:
         '''
         Assume that we're just appending to existing metadata?
         Can users delete metadata?
@@ -131,7 +132,21 @@ class ElasticRetriever(Retriever):
         # TODO append to _xdd_modified
         # TODO change data
         # TODO save
-        raise NotImplementedError('TODO')
+        test = self.get_object(oid)
+        if "_xdd_modified" in test:
+            test['_xdd_modified'].append(datetime.now())
+        else:
+            test['_xdd_modified'] = [datetime.now()]
+        new = merge(test,data)
+        new["id"] = oid
+        logging.info(type(new))
+        test = GrometFN(**new)
+        logging.info(test.to_dict().keys())
+        logging.info("About to upsert")
+        bulk(connections.get_connection(), [upsert(test)])
+
+        return 0
+
 
     def count(self, index:str):
         s = Search(index=index)

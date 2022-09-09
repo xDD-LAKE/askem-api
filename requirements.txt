@@ -5,6 +5,7 @@ gunicorn
 psycopg2
 pgcopy
 pymongo
+mergedeep
 elasticsearch==7.10
 elasticsearch_dsl==7.4.0
 tqdm

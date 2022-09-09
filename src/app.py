@@ -12,6 +12,7 @@ from flask import Flask, request, Blueprint
 from flask import jsonify
 from flask_cors import CORS
 from elastic_retriever import ElasticRetriever
+from mergedeep import merge
 import routes
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.DEBUG)
 
@@ -57,6 +58,8 @@ def save_object(oid: UUID, obj: dict, registrant_id:UUID, conn:Type[psycopg2.ext
     # write to postgres, getting an OID back if needed.
     cur = conn.cursor()
     if oid is None:
+        logging.info(obj)
+        logging.info(type(obj))
         cur.execute("INSERT INTO object (data, registrant_id) VALUES (%(data)s, %(registrant_id)s) RETURNING id", {"data" : obj, "registrant_id" : registrant_id})
         oid = cur.fetchone()[0]
         conn.commit()
@@ -75,11 +78,29 @@ def save_object(oid: UUID, obj: dict, registrant_id:UUID, conn:Type[psycopg2.ext
         return (-1,oid)
     return (0,oid)
 
-def check_path_exists(original, update):
-    pip 
+def get_all_keys(d) -> str:
+    for key, value in d.items():
+        yield key
+        if isinstance(value, dict):
+            yield from get_all_keys(value)
 
+def check_path_exists(original, update) -> bool:
+    """Return True if path exists in given dict."""
+    path = []
+    # unwind
+    for i in get_all_keys(update):
+        path.append(i)
+    next = original
+    print(path)
+    while path:
+        k = path.pop(0)
+        if k in next:
+            next = next[k]
+        else:
+            return False
+    return True
 
-tif "POSTGRES_HOST" in os.environ:
+if "POSTGRES_HOST" in os.environ:
     host = os.environ["POSTGRES_HOST"]
 else:
     host = 'aske-id-registration'
@@ -363,17 +384,19 @@ def update():
     logging.info(f"{body['operation']}-ing {body['id']} with {body['data']}")
     old = cur.fetchone()[0]
     if body["operation"] in ["ADD", "CHANGE"]: # functionally the same, but change should also check for the field existence to be sure that the user is aware that they're changing a thing..
-        check_path_exists(old, body['data'])
-        old.update(body["data"])
+        path_exists = check_path_exists(old, body['data'])
+        if path_exists and body["operation"] == "ADD":
+            return {"error": f"This path already exists! You can either CHANGE the value stored at this key or alter the path."}
+        if not path_exists and body["operation"] == "CHANGE":
+            return {"error": f"No value stored at this path {'.'.join(get_all_keys(body['data']))}! You can ADD the value here at this key or alter the path."}
 
-    logging.info(old)
+        # more sanity checks
+        # if path exists and object there is an array and op is not APPEND
 
-
+        updated = merge(old, body["data"])
 
 #    old.update(data) will update the old dictionary.
 
-
-    # ADD - implies adding data to an array *OR* creating a new field
 
     # TODO: Check for object existence.
     # TODO: parse field nesting and check validity
@@ -382,21 +405,22 @@ def update():
     # TODO: write to updates table
 
     try:
-        raise NotImplementedError
-#        cur.execute("SELECT r.id FROM registrant r, object o WHERE o.registrant_id=r.id AND r.api_key=%(api_key)s AND o.id=%(oid)s", {"api_key" : api_key, "oid" : oid})
-#        registrant_id = cur.fetchone()[0] # we can get this otherwise, but we need to check the object_id/registrant_id validity
-#        if registrant_id is None:
-#            return {"error" : f"Provided API key not allowed to register {oid}!"}
-#        obj = json.dumps(obj)
-#        success, oid = save_object(oid, obj, registrant_id, conn)
-#        if success == -1:
-#            return {"error" : f"Could not register object with ID {oid} in xDD indexer!"}
-#            registered.append(oid)
         reg_id = get_registrant_id(api_key)
-        cur.execute("INSERT INTO update (user_id, oid, data) VALUES (%(regid)s, %(oid), %(data)s);", {"data" : body['data'], "oid": body['id'], "reg_id": reg_id})
+        logging.info({"regid" : reg_id, "data" : json.dumps(body['data']), "oid": body['id']})
+        obj = json.dumps(body['data'])
+        logging.info(obj)
+        logging.info(type(obj))
+        cur.execute("INSERT INTO update (user_id, oid, data) VALUES (%(regid)s, %(oid)s, %(data)s);", {"regid" : reg_id, "data" : obj, "oid": body['id']})
+        logging.info("inserted")
+        cur.execute("UPDATE object SET data=%(data)s WHERE id=%(oid)s", {"oid" : body['id'], "data": json.dumps(updated)})
+        conn.commit()
+        app.retriever.modify_object(body['id'], body['data'])
+
+        # TODO: update ES modify_object(body['id'], body['data']ouldn
     except:
         logging.info(f"Couldn't update {body['id']}.")
         logging.info(sys.exc_info())
+        return {"error" : ":("}
         conn.commit()
     cur.close()
     conn.close()
