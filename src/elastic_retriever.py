@@ -8,6 +8,7 @@ from datetime import datetime
 import sys
 import os
 import glob
+import dateutil.parser
 from mergedeep import merge
 import json
 import hashlib
@@ -128,21 +129,18 @@ class ElasticRetriever(Retriever):
         Can users delete metadata?
         '''
 
-        # TODO Get object
-        # TODO append to _xdd_modified
-        # TODO change data
-        # TODO save
-        test = self.get_object(oid)
-        if "_xdd_modified" in test:
-            test['_xdd_modified'].append(datetime.now())
-        else:
-            test['_xdd_modified'] = [datetime.now()]
-        new = merge(test,data)
-        new["id"] = oid
-        logging.info(type(new))
-        test = GrometFN(**new)
+        data["id"] = oid
+        # make sure that dates are being stored as datetimes - if source of truth is postgres,
+        # they're strings due to issues serializing of datetime
+
+        for i, mdate in enumerate(data["_xdd_modified"]):
+            if isinstance(mdate, datetime):
+                data["_xdd_modified"][i] = mdate
+            else:
+                data["_xdd_modified"][i] = dateutil.parser.parse(mdate)
+
+        test = GrometFN(**data)
         logging.info(test.to_dict().keys())
-        logging.info("About to upsert")
         bulk(connections.get_connection(), [upsert(test)])
 
         return 0

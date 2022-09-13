@@ -159,6 +159,7 @@ def response(fcn):
             lic = {'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}
             result = {"success": {**ver, **tresult, **lic}}
         else:
+            # TODO: Field ordering gets screwy as things are added/deleted/changed. Float the askem_id to the top and the _xdd bokkeeping to the bottom?
             # TODO: this won't quite match the usual structure, since the "data" field implies successful request
             result = {"success": {'v' : VERSION, 'data': tresult, 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
         return jsonify(result)
@@ -394,16 +395,10 @@ def update():
         # if path exists and object there is an array and op is not APPEND
 
         updated = merge(old, body["data"])
-
-#    old.update(data) will update the old dictionary.
-
-
-    # TODO: Check for object existence.
-    # TODO: parse field nesting and check validity
-    # TODO: update JSON within postgres
-    # TODO: update JSON in elasticsearch
-    # TODO: write to updates table
-
+        if "_xdd_modified" in updated:
+            updated['_xdd_modified'].append(datetime.now())
+        else:
+            updated['_xdd_modified'] = [datetime.now()]
     try:
         reg_id = get_registrant_id(api_key)
         logging.info({"regid" : reg_id, "data" : json.dumps(body['data']), "oid": body['id']})
@@ -412,11 +407,10 @@ def update():
         logging.info(type(obj))
         cur.execute("INSERT INTO update (user_id, oid, data) VALUES (%(regid)s, %(oid)s, %(data)s);", {"regid" : reg_id, "data" : obj, "oid": body['id']})
         logging.info("inserted")
-        cur.execute("UPDATE object SET data=%(data)s WHERE id=%(oid)s", {"oid" : body['id'], "data": json.dumps(updated)})
+        cur.execute("UPDATE object SET data=%(data)s WHERE id=%(oid)s", {"oid" : body['id'], "data": json.dumps(updated, default=str)})
         conn.commit()
-        app.retriever.modify_object(body['id'], body['data'])
+        app.retriever.modify_object(body['id'], updated)
 
-        # TODO: update ES modify_object(body['id'], body['data']ouldn
     except:
         logging.info(f"Couldn't update {body['id']}.")
         logging.info(sys.exc_info())
