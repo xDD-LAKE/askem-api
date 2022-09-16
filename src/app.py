@@ -62,6 +62,7 @@ def save_object(oid: UUID, obj: dict, registrant_id:UUID, conn:Type[psycopg2.ext
         logging.info(type(obj))
         cur.execute("INSERT INTO object (data, registrant_id) VALUES (%(data)s, %(registrant_id)s) RETURNING id", {"data" : obj, "registrant_id" : registrant_id})
         oid = cur.fetchone()[0]
+        cur.execute("INSERT INTO log (user_id, oid, data, operation) VALUES (%(regid)s, %(oid)s, %(data)s, %(operation)s);", {"regid" : registrant_id, "data" : obj, "oid": oid, "operation" : "INSERT"})
         conn.commit()
     else:
         cur.execute("UPDATE object SET data=%(data)s WHERE id=%(oid)s", {"data" : obj, "oid": oid})
@@ -137,11 +138,12 @@ if not table_exists(ccur, "object"):
         );""")
     cconn.commit()
 
-if not table_exists(ccur, "update"):
+if not table_exists(ccur, "log"):
     ccur.execute("""
-        CREATE TABLE update (
+        CREATE TABLE log (
             id SERIAL PRIMARY KEY,
             oid uuid REFERENCES object(id),
+            operation text,
             user_id integer REFERENCES registrant(id),
             data jsonb DEFAULT NULL,
             timestamp timestamp DEFAULT now()
@@ -383,7 +385,10 @@ def update():
     cur = conn.cursor()
     cur.execute("SELECT data FROM object WHERE id=%(oid)s", {"oid": body['id']})
     logging.info(f"{body['operation']}-ing {body['id']} with {body['data']}")
-    old = cur.fetchone()[0]
+    try:
+        old = cur.fetchone()[0]
+    except:
+        return {"error" : f"Couldn't update document with id {body['id']}"}
     if body["operation"] in ["ADD", "CHANGE"]: # functionally the same, but change should also check for the field existence to be sure that the user is aware that they're changing a thing..
         path_exists = check_path_exists(old, body['data'])
         if path_exists and body["operation"] == "ADD":
@@ -405,8 +410,7 @@ def update():
         obj = json.dumps(body['data'])
         logging.info(obj)
         logging.info(type(obj))
-        cur.execute("INSERT INTO update (user_id, oid, data) VALUES (%(regid)s, %(oid)s, %(data)s);", {"regid" : reg_id, "data" : obj, "oid": body['id']})
-        logging.info("inserted")
+        cur.execute("INSERT INTO log (user_id, oid, data, operation) VALUES (%(regid)s, %(oid)s, %(data)s, %(operation)s);", {"regid" : reg_id, "data" : obj, "oid": body['id'], "operation" : body['operation']})
         cur.execute("UPDATE object SET data=%(data)s WHERE id=%(oid)s", {"oid" : body['id'], "data": json.dumps(updated, default=str)})
         conn.commit()
         app.retriever.modify_object(body['id'], updated)
