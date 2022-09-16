@@ -26,6 +26,16 @@ bp = Blueprint('xDD-askem-api', __name__)
 KNOWN_MODELS=[]
 VERSION = 1
 
+def nested_set(dic, keys, value):
+    logging.info("----")
+    logging.info(dic)
+    logging.info(keys)
+    logging.info(value)
+    logging.info("----")
+    for key in keys[:-1]:
+        dic = dic.setdefault(key, {})
+    dic[keys[-1]] = value
+
 def get_registrant_id(api_key):
     conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database=os.environ["POSTGRES_DB"])
     conn.autocommit = True
@@ -79,27 +89,31 @@ def save_object(oid: UUID, obj: dict, registrant_id:UUID, conn:Type[psycopg2.ext
         return (-1,oid)
     return (0,oid)
 
-def get_all_keys(d) -> str:
+def get_all_keys(d, prev=None) -> str:
     for key, value in d.items():
-        yield key
-        if isinstance(value, dict):
-            yield from get_all_keys(value)
+        if prev is not None:
+            yield f"{prev}.{key}"
+        elif isinstance(value, dict):
+            yield from get_all_keys(value, key)
+        else:
+            yield key
 
 def check_path_exists(original, update) -> bool:
-    """Return True if path exists in given dict."""
+    """
+    Return True if path exists in given dict.
+    else Returns False and the (first) non-existent path
+    """
+    existing_path = []
     path = []
     # unwind
     for i in get_all_keys(update):
         path.append(i)
-    next = original
-    print(path)
-    while path:
-        k = path.pop(0)
-        if k in next:
-            next = next[k]
-        else:
-            return False
-    return True
+    for i in get_all_keys(original):
+        existing_path.append(i)
+    for i in path:
+        if i not in existing_path:
+            return False, i
+    return True, i
 
 if "POSTGRES_HOST" in os.environ:
     host = os.environ["POSTGRES_HOST"]
@@ -377,7 +391,6 @@ def update():
         assert "data" in body
     except:
         logging.info(sys.exc_info())
-        logging.info(body)
         return {"error" : f"Invalid body! Updating expects a JSON object of the form {{'id' : '<ASKEM-ID>', 'operation' : {str(allowed_ops)}, 'data': {{'field': 'value''}}}}'"}
 
     conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database=os.environ["POSTGRES_DB"])
@@ -389,21 +402,42 @@ def update():
         old = cur.fetchone()[0]
     except:
         return {"error" : f"Couldn't update document with id {body['id']}"}
+    path_exists, p = check_path_exists(old, body['data'])
     if body["operation"] in ["ADD", "CHANGE"]: # functionally the same, but change should also check for the field existence to be sure that the user is aware that they're changing a thing..
-        path_exists = check_path_exists(old, body['data'])
         if path_exists and body["operation"] == "ADD":
-            return {"error": f"This path already exists! You can either CHANGE the value stored at this key or alter the path."}
-        if not path_exists and body["operation"] == "CHANGE":
-            return {"error": f"No value stored at this path {'.'.join(get_all_keys(body['data']))}! You can ADD the value here at this key or alter the path."}
+            return {"error": f"An included path ({p}) already exists! You can either CHANGE the value stored at this key or alter the path."}
+        if not path_exists and (body["operation"] == "CHANGE" or body["operation"] == "APPEND"):
+            return {"error": f"You are trying to {body['operation']} a field that doesn't exist ({p})! You can add this field instead."}
 
         # more sanity checks
-        # if path exists and object there is an array and op is not APPEND
 
         updated = merge(old, body["data"])
         if "_xdd_modified" in updated:
             updated['_xdd_modified'].append(datetime.now())
         else:
             updated['_xdd_modified'] = [datetime.now()]
+
+    elif body["operation"] == "APPEND":
+        if not path_exists:
+            return {"error": f"You are trying to {body['operation']} a field that doesn't exist ({p})! You can add this field instead."}
+        if path_exists and body["operation"] == "APPEND":
+            keys = [i for i in get_all_keys(body['data'])]
+            if len(keys) > 1:
+                return {"error": f"You may only APPEND one field at a time. You specified fields: {keys}."}
+
+            tp = keys[0].split('.')
+            check = old
+            new = body['data']
+            for key in tp:
+                check = check[key]
+                new = new[key]
+            if not isinstance(check, list):
+                return {"error": f"You are trying to APPEND to a non-array type at {p}. Currently stored there: {check}"}
+            check.append(new) # old is now updated
+            updated = old
+    elif body["operation"] == "DELETE":
+        # alternative: CHANGE with the current values minus the one you care about
+        return {"error": "Not implemented"}
     try:
         reg_id = get_registrant_id(api_key)
         logging.info({"regid" : reg_id, "data" : json.dumps(body['data']), "oid": body['id']})
