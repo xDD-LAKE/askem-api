@@ -42,6 +42,7 @@ class ASKEMObject(Document):
         name='askem-object'
 
 
+
 class ASKEMThing(ASKEMObject):
     """
     primaryName:Text
@@ -158,7 +159,7 @@ class ElasticRetriever(Retriever):
 
     def search(self, query: dict) -> dict:
         doc_filter = False
-        s = Search(index='gromet-fn-live')
+        s = Search(index='askem-object')
         s = s.query(query)
         response = s.execute()
         return response
@@ -173,7 +174,7 @@ class ElasticRetriever(Retriever):
         if provenance_method:
             q = q & Q('match_phrase', metadata__provenance__method=provenance_method)
         logger.info(q.to_dict())
-        s = Search(index='gromet-fn-live')
+        s = Search(index='askem-object')
         s = s.query(q)
         response = s.execute()
         final_results = [r.meta.id for r in response]
@@ -184,11 +185,13 @@ class ElasticRetriever(Retriever):
     def get_object(self, id: str):
         try:
             if id=="all":
-                s = Search(index='gromet-fn-live')
+                s = Search(index='askem-object')
                 return [e.to_dict() for e in s.scan()]
-            obj = GrometFN.get(id=id).to_dict()
+            obj = ASKEMObject.get(id=id).to_dict()
         except:
-            logger.warning(f"Couldn't get GrometFN with id {id}!")
+
+            logger.warning(sys.exc_info())
+            logger.warning(f"Couldn't get ASKEMObject with id {id}!")
             obj = None
         return obj
 
@@ -272,7 +275,7 @@ class ElasticRetriever(Retriever):
             else:
                 data["_xdd_modified"][i] = dateutil.parser.parse(mdate)
 
-        test = GrometFN(**data)
+        test = ASKEMObject(**data)
         logging.info(test.to_dict().keys())
         bulk(connections.get_connection(), [upsert(test)])
 
