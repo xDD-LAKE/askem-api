@@ -226,9 +226,28 @@ def index():
 def get_object(object_id):
     if len(request.args) == 0 and object_id is None:
         return routes.helptext['object']
+
+    # TODO: filter by DOMAIN_TAGS field
+    # TODO: enable search by all known properties.
+
+
+    # pre-schema
     metadata_type = request.args.get('metadata_type', type=str, default="")
     source_title = request.args.get('source_title', type=str, default="")
     provenance_method = request.args.get('provenance_method', type=str, default="")
+
+    # post-schema
+    askem_class = request.args.get('askem_class', type=str, default="")
+    domain_tag = request.args.get('domain_tag', type=str, default="")
+
+    # TODO: these keys should be the ones visible in an imported schema, with slightly different query logic based on type
+    filter_keys = ["description", "primaryName"]
+    query = {}
+    for k in filter_keys:
+        if k in request.args:
+            query[k] = request.args.get(k)
+
+    # TODO: catch if there are "extra" parameters passed in
 
     object_id = request.args.get('object_id', type=str, default=None) if object_id is None else object_id
 
@@ -238,9 +257,14 @@ def get_object(object_id):
     if object_id is None:
         if metadata_type is not None:
             logging.info("Searching by metadata type")
-            res = app.retriever.search_metadata(metadata_type=metadata_type,
+            res = app.retriever.search_metadata(
+                    askem_class=askem_class,
+                    domain_tag=domain_tag,
+                    metadata_type=metadata_type,
                     source_title=source_title,
-                    provenance_method=provenance_method)
+                    provenance_method=provenance_method,
+                    **query
+                    )
             return res
         return routes.helptext['object']
     res = app.retriever.get_object(object_id)

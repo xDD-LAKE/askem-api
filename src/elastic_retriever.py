@@ -164,15 +164,32 @@ class ElasticRetriever(Retriever):
         response = s.execute()
         return response
 
-    def search_metadata(self, metadata_type: str = "", source_title: str = "",
-            provenance_method: str = "") -> dict:
+    def search_metadata(self,
+            askem_class: str = "",
+            domain_tag: str = "",
+            metadata_type: str = "",
+            source_title: str = "",
+            provenance_method: str = "",
+            **kwargs) -> dict:
         q = Q()
+
+        # top-level searching
+        if askem_class:
+            q = q & Q('match', ASKEM_CLASS=askem_class)
+        if domain_tag:
+            q = q & Q('match', DOMAIN_TAGS=domain_tag)
+        for key, value in kwargs.items():
+            logger.info(f"Adding {key}:{value} to the query")
+            q = q & Q('match_phrase', **{f"properties__{key}": value})
+
+        # below are from pre-schema days
         if metadata_type:
             q = q & Q('match', metadata__metadata_type=metadata_type)
         if source_title:
             q = q & Q('match_phrase', metadata__documents__bibjson__title=source_title)
         if provenance_method:
             q = q & Q('match_phrase', metadata__provenance__method=provenance_method)
+        # ---
         logger.info(q.to_dict())
         s = Search(index='askem-object')
         s = s.query(q)
