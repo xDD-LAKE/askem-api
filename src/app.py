@@ -20,6 +20,7 @@ app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 app.url_map.strict_slashes = False
 app.retriever=ElasticRetriever(hosts=os.environ.get('ES_HOST', "es01:9200"))
+app.retriever.create_index()
 bp = Blueprint('xDD-askem-api', __name__)
 
 # TODO: get ride of this obvious placeholder
@@ -69,11 +70,22 @@ def save_object(oid: UUID, obj: dict, registrant_id:UUID, conn:Type[psycopg2.ext
 
     # also write it to ES
     obj = json.loads(obj)
+    # Add internally-assigned fields
     obj['_id'] = oid
-    obj['askem_id'] = oid
+    obj['ASKEM_ID'] = oid
     obj['_xdd_created'] = datetime.now()
     obj['_xdd_registrant'] = registrant_id
+    if 'ASKEM_CLASS' not in obj:
+        obj['ASKEM_CLASS'] = "ASKEMThing"
+
+    # TODO: class-specific property validation
+
+#    obj['properties'] = {}
+#    obj['DOMAIN_TAGS'] = []
+#    obj["RAW_DATA"] =
+
     check = app.retriever.add_object(obj)
+
     if check != 0:
         return (-1,oid)
     return (0,oid)
@@ -256,6 +268,8 @@ def create():
     conn.autocommit = True
     cur = conn.cursor()
     registered = []
+    logging.info(type(objects))
+    logging.info(objects)
     if isinstance(objects, dict):
         objects = [objects]
     for obj in objects:
@@ -266,8 +280,8 @@ def create():
                 return {"error" : f"Could not create object with ID {oid} in xDD indexer!"}
             registered.append(oid)
         except:
-            logging.info(f"Couldn't register {obj}.")
-            logging.info(sys.exc_info())
+#            logging.info(f"Couldn't register {obj}.")
+#            logging.info(sys.exc_info())
             conn.commit()
     cur.close()
     conn.close()

@@ -5,6 +5,7 @@ from elasticsearch import RequestsHttpConnection
 from elasticsearch_dsl import Document, Text, connections, Integer, Date, Float, Keyword, Join, Long, Object, Mapping, Nested
 from elasticsearch.helpers import bulk
 from datetime import datetime
+import schema
 import sys
 import os
 import glob
@@ -28,12 +29,125 @@ def upsert(doc: Document) -> dict:
     del d['_source']
     return d
 
-
-class GrometFN(Document):
+class ASKEMObject(Document):
+    """
+    ASKEM_ID:uuid
+    ASKEM_CLASS:ASKEM_Ontology_type
+    PROPERTIES:[key:value]
+    DOMAIN_TAGS:[kg_version:domain_id]
+    RAW_DATA:JSON
+    EXTERNAL_URL:URL
+    """
     class Index:
-        name='gromet-fn-live'
-    def get_id(self):
-        return 1
+        name='askem-object'
+
+
+class ASKEMThing(ASKEMObject):
+    """
+    primaryName:Text
+    description:Text
+    rawData:JSON
+    """
+
+class ASKEMTerm(Document):
+    """
+    primaryName:Text
+    description:Text
+    sourceID:Text
+    source:Text
+    synymoms[Text]
+    """
+
+class ASKEMFigure(Document):
+    """
+    caption:Text
+    documentID:ASKEM_ID
+    documentTitle:Text
+    contentText:Text
+    image:JPG
+    sectionTitle:Text
+    sectionID:ASKEM_ID
+    relevantSentences:[Text]
+    """
+
+class ASKEMTable(Document):
+    """
+    caption:Text
+    documentID:ASKEM_ID
+    documentTitle:Text
+    contentText:Text
+    contentJSON:JSON
+    image:JPG
+    sectionTitle:Text
+    sectionID:ASKEM_ID
+    relevantSentences:[Text]
+    """
+
+class ASKEMSection(Document):
+    """
+    title:Text
+    documentID:ASKEM_ID
+    documentTitle:Text
+    contentText:Text
+    indexInDocument:Integer
+    """
+
+class ASKEMDocument(Document):
+    """
+    title:Text
+    DOI:Text
+    treustScore:Numeric
+    abstract:Text
+    _XDDID:Text
+    """
+    class index:
+        name='askem-document'
+
+class ASKEMFunctionNetwork(Document):
+    """
+    primaryName:Text
+    description:Text
+    gromet:JSON
+    """
+    class Index:
+        name='askem-functionnetwork'
+
+class ASKEMParameter(Document):
+    """
+    primaryName:Text
+    description:Text
+    value:Numerical
+    unit:Text
+    rawLocation:Text
+    populationMetadata:Text
+    """
+    class Index:
+        name='askem-parameter'
+
+class ASKEMScenario(Document):
+    """
+    description:Text
+    consideredModel:ASKEM_ID
+    consideredModelName:Text
+    rawTime:Text
+    rawLocation:Text
+    populationMetadata:Text
+    """
+    class index:
+        name='askem-scenario'
+
+class ASKEMModel(Document):
+    """
+    primaryName:Text
+    description:Text
+    hasParameter:ASKEM_ID
+    allParameters:[Text]
+    functionNetwork:ASKEM_ID
+    """
+    class index:
+        name='askem-model'
+
+
 
 class ElasticRetriever(Retriever):
     def __init__(self, hosts=['localhost']):
@@ -78,44 +192,63 @@ class ElasticRetriever(Retriever):
             obj = None
         return obj
 
-    def build_index(self, input_dir):
+    def get_mappings(self):
+        properties = {}
+        subproperties = {}
+        for prop in schema.BASE_KEYWORD_PROPERTIES:
+            properties[prop] = {"type" : "keyword"}
+        for prop in schema.BASE_OBJECT_PROPERTIES:
+            properties[prop] = {"type" : "object"}
+        for prop in schema.KEYWORD_PROPERTIES:
+            subproperties[prop] = {"type" : "keyword"}
+        for prop in schema.TEXT_PROPERTIES:
+            subproperties[prop] = {"type" : "text"}
+        for prop in schema.OBJECT_PROPERTIES:
+            subproperties[prop] = {"type" : "object"}
+        for prop in schema.NUMERICAL_PROPERTIES:
+            subproperties[prop] = {"type" : "double"}
+        for prop in schema.INTEGER_PROPERTIES:
+            subproperties[prop] = {"type" : "long"}
+        # Mildly annoying that the mapping parlance and our chosen parlance are the same here..
+        properties['properties'] = {"properties" : subproperties}
+        return properties
+
+    def create_index(self):
         logger.info('Building elastic index')
         es= connections.get_connection()
-        if not es.indices.exists("gromet-fn-live"):
-                mapping = {
-                    "mappings": {
-                        "_source" : { "enabled" : True },
-                        "properties" : {
-                            }
-                        }
-                    }
-                # TODO: dump a real working mapping and use that
-                es.indices.create("gromet-fn-live", body=mapping) # TODO: put in settings.
-                logger.info("Index initialized.")
+        if not es.indices.exists("askem-object"):
+            mapping = {
+                "mappings": {
+                    "_source" : { "enabled" : True },
+                    "properties" : self.get_mappings()
+                }
+                }
+            es.indices.create("askem-object", body=mapping) # TODO: put in settings.
+            logger.info("Index initialized.")
 
-        docs = glob.glob(f"{input_dir}/*.json")
-        logger.info(f"Ingesting {len(docs)} documents.")
-        to_ingest = []
-        for f in docs:
-            logger.info(f'Ingesting {f}')
-            data = json.load(open(f))
-
-            # I'm loading these manually, so set registrant appropriately
-            data["_xdd_registrant"] = 1
-            data["_xdd_created"] = datetime.now()
-            data["_xdd_modified"] = []
-
-            # TODO: get askem-ids
-            data["askem_id"] = "1"
-            data["_id"] = data["askem_id"]
-
-            test = GrometFN(**data)
-            to_ingest.append(test) # for now, just expand the whole thing with no changes
-        bulk(connections.get_connection(), [upsert(d) for d in to_ingest])
+#        docs = glob.glob(f"{input_dir}/*.json")
+#        logger.info(f"Ingesting {len(docs)} documents.")
+#        to_ingest = []
+#        for f in docs:
+#            logger.info(f'Ingesting {f}')
+#            data = json.load(open(f))
+#
+#            # I'm loading these manually, so set registrant appropriately
+#            data["_xdd_registrant"] = 1
+#            data["_xdd_created"] = datetime.now()
+#            data["_xdd_modified"] = []
+#
+#            # TODO: get askem-ids
+#            data["askem_id"] = "1"
+#            data["_id"] = data["askem_id"]
+#
+#            test = ASKEMObject(**data)
+#            to_ingest.append(test) # for now, just expand the whole thing with no changes
+#        bulk(connections.get_connection(), [upsert(d) for d in to_ingest])
 
     def add_object(self, data: dict) -> int:
         # TODO (eventually) : check data consistency
-        test = GrometFN(**data)
+        test = ASKEMObject(**data)
         try:
             test.save()
         except:
