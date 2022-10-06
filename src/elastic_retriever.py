@@ -18,6 +18,7 @@ import logging
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+INDEX = "askem-object-02"
 
 def upsert(doc: Document) -> dict:
     d = doc.to_dict(True)
@@ -39,7 +40,7 @@ class ASKEMObject(Document):
     EXTERNAL_URL:URL
     """
     class Index:
-        name='askem-object'
+        name=INDEX
 
 
 
@@ -159,7 +160,7 @@ class ElasticRetriever(Retriever):
 
     def search(self, query: dict) -> dict:
         doc_filter = False
-        s = Search(index='askem-object')
+        s = Search(index=INDEX)
         s = s.query(query)
         response = s.execute()
         return response
@@ -191,7 +192,7 @@ class ElasticRetriever(Retriever):
             q = q & Q('match_phrase', metadata__provenance__method=provenance_method)
         # ---
         logger.info(q.to_dict())
-        s = Search(index='askem-object')
+        s = Search(index=INDEX)
         s = s.query(q)
         response = s.execute()
         final_results = [r.meta.id for r in response]
@@ -202,7 +203,7 @@ class ElasticRetriever(Retriever):
     def get_object(self, id: str):
         try:
             if id=="all":
-                s = Search(index='askem-object')
+                s = Search(index=INDEX)
                 return [e.to_dict() for e in s.scan()]
             obj = ASKEMObject.get(id=id).to_dict()
         except:
@@ -219,6 +220,8 @@ class ElasticRetriever(Retriever):
             properties[prop] = {"type" : "keyword"}
         for prop in schema.BASE_OBJECT_PROPERTIES:
             properties[prop] = {"type" : "object"}
+        for prop in schema.BASE_TEXT_PROPERTIES:
+            properties[prop] = {"type" : "text"}
         for prop in schema.KEYWORD_PROPERTIES:
             subproperties[prop] = {"type" : "keyword"}
         for prop in schema.TEXT_PROPERTIES:
@@ -229,6 +232,8 @@ class ElasticRetriever(Retriever):
             subproperties[prop] = {"type" : "double"}
         for prop in schema.INTEGER_PROPERTIES:
             subproperties[prop] = {"type" : "long"}
+        for prop in schema.BINARY_PROPERTIES:
+            subproperties[prop] = {"type" : "binary"}
         # Mildly annoying that the mapping parlance and our chosen parlance are the same here..
         properties['properties'] = {"properties" : subproperties}
         return properties
@@ -236,14 +241,25 @@ class ElasticRetriever(Retriever):
     def create_index(self):
         logger.info('Building elastic index')
         es= connections.get_connection()
-        if not es.indices.exists("askem-object"):
+        if not es.indices.exists(INDEX):
             mapping = {
                 "mappings": {
                     "_source" : { "enabled" : True },
-                    "properties" : self.get_mappings()
+                    "properties" : self.get_mappings(),
+                    'dynamic': False,
+                    "dynamic_templates": [
+                        {
+                            "only_index_metadata": {
+                                "path_match": "metadata*",
+                                "mapping": {
+                                    "dynamic": "true"
+                                    }
+                                }
+                            }
+                        ]
+                    }
                 }
-                }
-            es.indices.create("askem-object", body=mapping) # TODO: put in settings.
+            es.indices.create(INDEX, body=mapping) # TODO: put in settings.
             logger.info("Index initialized.")
 
 #        docs = glob.glob(f"{input_dir}/*.json")
