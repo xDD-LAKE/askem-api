@@ -46,7 +46,6 @@ def table_exists(cur, table_name):
     """
     cur.execute("""SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' """)
     for table in cur.fetchall():
-        logging.info(table[0])
         if table_name == table[0]:
             return True
     return False
@@ -59,8 +58,6 @@ def save_object(oid: UUID, obj: dict, registrant_id:UUID, conn:Type[psycopg2.ext
     # write to postgres, getting an OID back if needed.
     cur = conn.cursor()
     if oid is None:
-        logging.info(obj)
-        logging.info(type(obj))
         cur.execute("INSERT INTO object (data, registrant_id) VALUES (%(data)s, %(registrant_id)s) RETURNING id", {"data" : obj, "registrant_id" : registrant_id})
         oid = cur.fetchone()[0]
         conn.commit()
@@ -241,7 +238,7 @@ def get_object(object_id):
     domain_tag = request.args.get('domain_tag', type=str, default="")
 
     # TODO: these keys should be the ones visible in an imported schema, with slightly different query logic based on type
-    filter_keys = ["description", "primaryName"]
+    filter_keys = ["description", "primaryName", "XDDID", "contentText", "DOMAIN_TAGS"]
     query = {}
     for k in filter_keys:
         if k in request.args:
@@ -292,8 +289,6 @@ def create():
     conn.autocommit = True
     cur = conn.cursor()
     registered = []
-    logging.info(type(objects))
-    logging.info(objects)
     if isinstance(objects, dict):
         objects = [objects]
     for obj in objects:
@@ -392,75 +387,73 @@ def register():
             "registered_ids" : registered
             }
             }
-
-@bp.route('/update', methods=["POST", "GET"])
-@response
-@require_apikey
-def update():
-    allowed_ops = ["ADD", "CHANGE", "DELETE", "APPEND"]
-    if request.method == "GET":
-        logging.info("???" + str(routes.helptext['update']))
-        return routes.helptext['update']
-
-    headers = request.headers
-    api_key = headers.get('x-api-key', default = None)
-    if api_key is None:
-        api_key = request.args.get('api_key', default=None)
-    try:
-        body = request.get_json()
-        assert "operation" in body and body['operation'] in allowed_ops
-        assert "id" in body
-        assert "data" in body
-    except:
-        logging.info(sys.exc_info())
-        logging.info(body)
-        return {"error" : f"Invalid body! Updating expects a JSON object of the form {{'id' : '<ASKEM-ID>', 'operation' : {str(allowed_ops)}, 'data': {{'field': 'value''}}}}'"}
-
-    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database=os.environ["POSTGRES_DB"])
-    conn.autocommit = True
-    cur = conn.cursor()
-    cur.execute("SELECT data FROM object WHERE id=%(oid)s", {"oid": body['id']})
-    logging.info(f"{body['operation']}-ing {body['id']} with {body['data']}")
-    old = cur.fetchone()[0]
-    if body["operation"] in ["ADD", "CHANGE"]: # functionally the same, but change should also check for the field existence to be sure that the user is aware that they're changing a thing..
-        path_exists = check_path_exists(old, body['data'])
-        if path_exists and body["operation"] == "ADD":
-            return {"error": f"This path already exists! You can either CHANGE the value stored at this key or alter the path."}
-        if not path_exists and body["operation"] == "CHANGE":
-            return {"error": f"No value stored at this path {'.'.join(get_all_keys(body['data']))}! You can ADD the value here at this key or alter the path."}
-
-        # more sanity checks
-        # if path exists and object there is an array and op is not APPEND
-
-        updated = merge(old, body["data"])
-        if "_xdd_modified" in updated:
-            updated['_xdd_modified'].append(datetime.now())
-        else:
-            updated['_xdd_modified'] = [datetime.now()]
-    try:
-        reg_id = get_registrant_id(api_key)
-        logging.info({"regid" : reg_id, "data" : json.dumps(body['data']), "oid": body['id']})
-        obj = json.dumps(body['data'])
-        logging.info(obj)
-        logging.info(type(obj))
-        cur.execute("INSERT INTO update (user_id, oid, data) VALUES (%(regid)s, %(oid)s, %(data)s);", {"regid" : reg_id, "data" : obj, "oid": body['id']})
-        logging.info("inserted")
-        cur.execute("UPDATE object SET data=%(data)s WHERE id=%(oid)s", {"oid" : body['id'], "data": json.dumps(updated, default=str)})
-        conn.commit()
-        app.retriever.modify_object(body['id'], updated)
-
-    except:
-        logging.info(f"Couldn't update {body['id']}.")
-        logging.info(sys.exc_info())
-        return {"error" : ":("}
-        conn.commit()
-    cur.close()
-    conn.close()
-    return {"success" : body
-            }
-
-
-
+#
+#@bp.route('/update', methods=["POST", "GET"])
+#@response
+#@require_apikey
+#def update():
+#    allowed_ops = ["ADD", "CHANGE", "DELETE", "APPEND"]
+#    if request.method == "GET":
+#        logging.info("???" + str(routes.helptext['update']))
+#        return routes.helptext['update']
+#
+#    headers = request.headers
+#    api_key = headers.get('x-api-key', default = None)
+#    if api_key is None:
+#        api_key = request.args.get('api_key', default=None)
+#    try:
+#        body = request.get_json()
+#        assert "operation" in body and body['operation'] in allowed_ops
+#        assert "id" in body
+#        assert "data" in body
+#    except:
+#        logging.info(sys.exc_info())
+#        logging.info(body)
+#        return {"error" : f"Invalid body! Updating expects a JSON object of the form {{'id' : '<ASKEM-ID>', 'operation' : {str(allowed_ops)}, 'data': {{'field': 'value''}}}}'"}
+#
+#    conn = psycopg2.connect(host=host, user=user, password=os.environ["POSTGRES_PASSWORD"], database=os.environ["POSTGRES_DB"])
+#    conn.autocommit = True
+#    cur = conn.cursor()
+#    cur.execute("SELECT data FROM object WHERE id=%(oid)s", {"oid": body['id']})
+#    logging.info(f"{body['operation']}-ing {body['id']} with {body['data']}")
+#    old = cur.fetchone()[0]
+#    if body["operation"] in ["ADD", "CHANGE"]: # functionally the same, but change should also check for the field existence to be sure that the user is aware that they're changing a thing..
+#        path_exists = check_path_exists(old, body['data'])
+#        if path_exists and body["operation"] == "ADD":
+#            return {"error": f"This path already exists! You can either CHANGE the value stored at this key or alter the path."}
+#        if not path_exists and body["operation"] == "CHANGE":
+#            return {"error": f"No value stored at this path {'.'.join(get_all_keys(body['data']))}! You can ADD the value here at this key or alter the path."}
+#
+#        # more sanity checks
+#        # if path exists and object there is an array and op is not APPEND
+#
+#        updated = merge(old, body["data"])
+#        if "_xdd_modified" in updated:
+#            updated['_xdd_modified'].append(datetime.now())
+#        else:
+#            updated['_xdd_modified'] = [datetime.now()]
+#    try:
+#        reg_id = get_registrant_id(api_key)
+#        logging.info({"regid" : reg_id, "data" : json.dumps(body['data']), "oid": body['id']})
+#        obj = json.dumps(body['data'])
+#        logging.info(obj)
+#        logging.info(type(obj))
+#        cur.execute("INSERT INTO update (user_id, oid, data) VALUES (%(regid)s, %(oid)s, %(data)s);", {"regid" : reg_id, "data" : obj, "oid": body['id']})
+#        logging.info("inserted")
+#        cur.execute("UPDATE object SET data=%(data)s WHERE id=%(oid)s", {"oid" : body['id'], "data": json.dumps(updated, default=str)})
+#        conn.commit()
+#        app.retriever.modify_object(body['id'], updated)
+#
+#    except:
+#        logging.info(f"Couldn't update {body['id']}.")
+#        logging.info(sys.exc_info())
+#        return {"error" : ":("}
+#        conn.commit()
+#    cur.close()
+#    conn.close()
+#    return {"success" : body
+#            }
+#
 
 if 'PREFIX' in os.environ:
     logging.info(f"Stripping {os.environ['PREFIX']}")
