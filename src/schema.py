@@ -1,12 +1,15 @@
 BASE_KEYWORD_PROPERTIES = [
         "ASKEM_ID",
         "ASKEM_CLASS",
-        "DOMAIN_TAGS",
         "EXTERNAL_URL",
         ]
 
 BASE_OBJECT_PROPERTIES = [
-        "RAW_DATA"
+        "RAW_DATA",
+        ]
+
+BASE_TEXT_PROPERTIES = [
+        "DOMAIN_TAGS"
         ]
 
 # Keyword for exact-match fields, including fields which are arrays of keywords
@@ -32,10 +35,12 @@ TEXT_PROPERTIES = [
         "abstract",
         "documentTitle",
         "textContent",
+        "contentText",
         "sectionTitle",
         "relevantSentences",
         "caption",
         "synonyms",
+        "primaryName",
         ]
 
 OBJECT_PROPERTIES = [
@@ -50,6 +55,8 @@ NUMERICAL_PROPERTIES = ["value", "trustScore"]
 # Integer
 INTEGER_PROPERTIES = ["indexInDocument"]
 
+# Binary
+BINARY_PROPERTIES = ["image"]
 # Nested
 NESTED_PROPERTIES = []
 
