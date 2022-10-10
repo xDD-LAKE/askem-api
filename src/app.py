@@ -238,7 +238,7 @@ def get_object(object_id):
     domain_tag = request.args.get('domain_tag', type=str, default="")
 
     # TODO: these keys should be the ones visible in an imported schema, with slightly different query logic based on type
-    filter_keys = ["description", "primaryName", "XDDID", "contentText", "DOMAIN_TAGS"]
+    filter_keys = ["description", "primaryName", "XDDID", "contentText", "DOMAIN_TAGS", "sourceID"]
     query = {}
     for k in filter_keys:
         if k in request.args:
