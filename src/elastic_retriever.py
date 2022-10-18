@@ -171,6 +171,9 @@ class ElasticRetriever(Retriever):
             metadata_type: str = "",
             source_title: str = "",
             provenance_method: str = "",
+            count: bool = False,
+            ndocs: int = 30,
+            page: int = 0,
             **kwargs) -> dict:
         q = Q()
 
@@ -193,7 +196,12 @@ class ElasticRetriever(Retriever):
         # ---
         logger.info(q.to_dict())
         s = Search(index=INDEX)
-        s = s.query(q)
+        start = page * ndocs
+        end = start + ndocs
+        logger.info(f"Getting results {start}-{end}")
+        if count:
+            return s.query(q).count()
+        s = s.query(q)[start:end]
         response = s.execute()
         final_results = [r.meta.id for r in response]
         final_results = [self.get_object(i) for i in final_results]
