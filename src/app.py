@@ -163,14 +163,10 @@ def response(fcn):
         tresult = fcn(*args, **kwargs)
         if "error" in tresult:
             result = {"error": {'v' : VERSION, 'message': tresult["error"], "about": routes.helptext[fcn.__name__], 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
-        elif fcn.__name__ == "index":
+        else:
             ver = {'v': VERSION}
             lic = {'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}
             result = {"success": {**ver, **tresult, **lic}}
-        else:
-            # TODO: Field ordering gets screwy as things are added/deleted/changed. Float the askem_id to the top and the _xdd bokkeeping to the bottom?
-            # TODO: this won't quite match the usual structure, since the "data" field implies successful request
-            result = {"success": {'v' : VERSION, 'data': tresult, 'license' : "https://creativecommons.org/licenses/by-nc/2.0/"}}
         return jsonify(result)
     wrapper.__name__ = fcn.__name__ #wrapper name shenanigans: https://stackoverflow.com/questions/17256602/assertionerror-view-function-mapping-is-overwriting-an-existing-endpoint-functi
     return wrapper
@@ -227,6 +223,8 @@ def get_object(object_id):
     # TODO: filter by DOMAIN_TAGS field
     # TODO: enable search by all known properties.
 
+    page_num = request.args.get('page', type=int)
+    if page_num is None: page_num=0
 
     # pre-schema
     metadata_type = request.args.get('metadata_type', type=str, default="")
@@ -254,20 +252,31 @@ def get_object(object_id):
     if object_id is None:
         if metadata_type is not None:
             logging.info("Searching by metadata type")
+            count = app.retriever.search_metadata(
+                    askem_class=askem_class,
+                    domain_tag=domain_tag,
+                    metadata_type=metadata_type,
+                    source_title=source_title,
+                    provenance_method=provenance_method,
+                    count=True,
+                    **query
+                    )
+            logging.info(count)
             res = app.retriever.search_metadata(
                     askem_class=askem_class,
                     domain_tag=domain_tag,
                     metadata_type=metadata_type,
                     source_title=source_title,
                     provenance_method=provenance_method,
+                    page=page_num,
                     **query
                     )
-            return res
+            return {"total" : count, "page" : page_num, "data": res}
         return routes.helptext['object']
     res = app.retriever.get_object(object_id)
     if not isinstance(res, list):
         res = [res]
-    return res
+    return {"data": res}
 
 @bp.route('/create', methods=["POST", "GET"])
 @response
