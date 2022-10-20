@@ -18,6 +18,8 @@ import logging
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+es_logger = logging.getLogger('elasticsearch')
+es_logger.setLevel(logging.WARNING)
 INDEX = "askem-object-02"
 
 def upsert(doc: Document) -> dict:
@@ -174,11 +176,14 @@ class ElasticRetriever(Retriever):
             **kwargs) -> dict:
         q = Q()
 
-        # top-level searching
+        # deprecated parameters, originally added by hand
         if askem_class:
             q = q & Q('match', ASKEM_CLASS=askem_class)
         if domain_tag:
             q = q & Q('match', DOMAIN_TAGS=domain_tag)
+
+        # schema-derived searching
+        # TODO: type-specific querying.
         for key, value in kwargs.items():
             logger.info(f"Adding {key}:{value} to the query")
             if key in schema.BASE_PROPERTIES:
