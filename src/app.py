@@ -14,6 +14,7 @@ from flask_cors import CORS
 from elastic_retriever import ElasticRetriever
 from mergedeep import merge
 import routes
+import schema
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.DEBUG)
 
 app = Flask(__name__)
@@ -22,6 +23,12 @@ app.url_map.strict_slashes = False
 app.retriever=ElasticRetriever(hosts=os.environ.get('ES_HOST', "es01:9200"))
 app.retriever.create_index()
 bp = Blueprint('xDD-askem-api', __name__)
+
+SCHEMA_KEYS = []
+for i in schema.__dict__.keys():
+    if "PROPERTIES" in i:
+        SCHEMA_KEYS += schema.__dict__[i]
+logging.info(SCHEMA_KEYS)
 
 # TODO: get ride of this obvious placeholder
 KNOWN_MODELS=[]
@@ -235,13 +242,12 @@ def get_object(object_id):
     askem_class = request.args.get('askem_class', type=str, default="")
     domain_tag = request.args.get('domain_tag', type=str, default="")
 
-    # TODO: these keys should be the ones visible in an imported schema, with slightly different query logic based on type
-    filter_keys = ["description", "primaryName", "XDDID", "contentText", "DOMAIN_TAGS", "sourceID"]
     query = {}
-    for k in filter_keys:
+    for k in SCHEMA_KEYS:
         if k in request.args:
             query[k] = request.args.get(k)
 
+    # TODO: (in Retriever) Different logic based on type of parameter
     # TODO: catch if there are "extra" parameters passed in
 
     object_id = request.args.get('object_id', type=str, default=None) if object_id is None else object_id
