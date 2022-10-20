@@ -233,11 +233,6 @@ def get_object(object_id):
     page_num = request.args.get('page', type=int)
     if page_num is None: page_num=0
 
-    # pre-schema
-    metadata_type = request.args.get('metadata_type', type=str, default="")
-    source_title = request.args.get('source_title', type=str, default="")
-    provenance_method = request.args.get('provenance_method', type=str, default="")
-
     # post-schema
     askem_class = request.args.get('askem_class', type=str, default="")
     domain_tag = request.args.get('domain_tag', type=str, default="")
@@ -256,29 +251,20 @@ def get_object(object_id):
         object_id = "all"
 
     if object_id is None:
-        if metadata_type is not None:
-            logging.info("Searching by metadata type")
-            count = app.retriever.search_metadata(
-                    askem_class=askem_class,
-                    domain_tag=domain_tag,
-                    metadata_type=metadata_type,
-                    source_title=source_title,
-                    provenance_method=provenance_method,
-                    count=True,
-                    **query
-                    )
-            logging.info(count)
-            res = app.retriever.search_metadata(
-                    askem_class=askem_class,
-                    domain_tag=domain_tag,
-                    metadata_type=metadata_type,
-                    source_title=source_title,
-                    provenance_method=provenance_method,
-                    page=page_num,
-                    **query
-                    )
-            return {"total" : count, "page" : page_num, "data": res}
-        return routes.helptext['object']
+        logging.info("No object_id specified - searching")
+        count = app.retriever.search_metadata(
+                askem_class=askem_class,
+                domain_tag=domain_tag,
+                count=True,
+                **query
+                )
+        res = app.retriever.search_metadata(
+                askem_class=askem_class,
+                domain_tag=domain_tag,
+                page=page_num,
+                **query
+                )
+        return {"total" : count, "page" : page_num, "data": res}
     res = app.retriever.get_object(object_id)
     if not isinstance(res, list):
         res = [res]

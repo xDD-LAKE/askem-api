@@ -168,9 +168,6 @@ class ElasticRetriever(Retriever):
     def search_metadata(self,
             askem_class: str = "",
             domain_tag: str = "",
-            metadata_type: str = "",
-            source_title: str = "",
-            provenance_method: str = "",
             count: bool = False,
             ndocs: int = 30,
             page: int = 0,
@@ -184,16 +181,11 @@ class ElasticRetriever(Retriever):
             q = q & Q('match', DOMAIN_TAGS=domain_tag)
         for key, value in kwargs.items():
             logger.info(f"Adding {key}:{value} to the query")
-            q = q & Q('match_phrase', **{f"properties__{key}": value})
+            if key in schema.BASE_PROPERTIES:
+                q = q & Q('match', **{f"{key}": value})
+            else:
+                q = q & Q('match_phrase', **{f"properties__{key}": value})
 
-        # below are from pre-schema days
-        if metadata_type:
-            q = q & Q('match', metadata__metadata_type=metadata_type)
-        if source_title:
-            q = q & Q('match_phrase', metadata__documents__bibjson__title=source_title)
-        if provenance_method:
-            q = q & Q('match_phrase', metadata__provenance__method=provenance_method)
-        # ---
         logger.info(q.to_dict())
         s = Search(index=INDEX)
         start = page * ndocs
