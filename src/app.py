@@ -93,6 +93,15 @@ def get_all_keys(d) -> str:
         if isinstance(value, dict):
             yield from get_all_keys(value)
 
+def get_docid_from_doi(doi):
+    resp = requests.get(f"https://xdd.wisc.edu/api/articles?doi={doi}&corpus=fulltext")
+    if resp.status_code == 200:
+        data = resp.json()
+        if 'success' in data:
+            for i in data['success']['data']:
+                return i['_gddid']
+    return ''
+
 def check_path_exists(original, update) -> bool:
     """Return True if path exists in given dict."""
     path = []
@@ -235,12 +244,21 @@ def get_object(object_id):
     askem_class = request.args.get('askem_class', type=str, default="")
     domain_tag = request.args.get('domain_tag', type=str, default="")
 
+    doi = request.args.get('doi', default='', type=str)
+    if docid == '' and doi != '':
+        docid = get_docid_from_doi(doi)
+        if docid == '':
+            return jsonify({'error' : 'DOI not in xDD system!', 'v' : VERSION})
+
     # TODO: these keys should be the ones visible in an imported schema, with slightly different query logic based on type
     filter_keys = ["description", "primaryName", "XDDID", "contentText", "DOMAIN_TAGS", "sourceID"]
     query = {}
     for k in filter_keys:
         if k in request.args:
             query[k] = request.args.get(k)
+
+    if docid != "" and not "XDDID" in query:
+        query["XDDID"] = docid
 
     # TODO: catch if there are "extra" parameters passed in
 
