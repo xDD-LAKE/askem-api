@@ -6,6 +6,7 @@ import json
 from uuid import uuid4, UUID
 from typing import Type
 from functools import wraps
+import requests
 import psycopg2
 from psycopg2.extras import execute_values
 from flask import Flask, request, Blueprint
@@ -99,6 +100,15 @@ def get_all_keys(d) -> str:
         yield key
         if isinstance(value, dict):
             yield from get_all_keys(value)
+
+def get_docid_from_doi(doi):
+    resp = requests.get(f"https://xdd.wisc.edu/api/articles?doi={doi}&corpus=fulltext")
+    if resp.status_code == 200:
+        data = resp.json()
+        if 'success' in data:
+            for i in data['success']['data']:
+                return i['_gddid']
+    return ''
 
 def check_path_exists(original, update) -> bool:
     """Return True if path exists in given dict."""
@@ -242,7 +252,17 @@ def get_object(object_id):
         if k in request.args:
             query[k] = request.args.get(k)
 
-    # TODO: (in Retriever) Different logic based on type of parameter
+    doi = request.args.get('doi', default='', type=str)
+    docid = ""
+    if doi != '':
+        docid = get_docid_from_doi(doi)
+        if docid == '':
+            return jsonify({'error' : 'DOI not in xDD system!', 'v' : VERSION})
+        if not "XDDID" in query:
+            query["XDDID"] = docid
+        else:
+            return jsonify({'error': "DOI and XDDID options are currently incompatible!"})
+
     # TODO: catch if there are "extra" parameters passed in
 
     object_id = request.args.get('object_id', type=str, default=None) if object_id is None else object_id

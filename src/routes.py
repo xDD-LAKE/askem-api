@@ -19,18 +19,19 @@ helptext = {
             "options" : {
                 "parameters": {
                     "object_id" : "Object id (ASKEM-ID) to retrieve. Optionally positional.",
-                    "metadata_type" : "Type/source of metadata. Examples: [gromet_creation, textual_document_collection]",
-                    "source_title" : "Title of document providing metadata. title field within documents.bibjson for metadata_type=textual_document_collection",
-                    "provenance_method" : "The inference method (with version) used to derive data. Examples: [skema_code2fn_program_analysis]",
+                    "askem_class" : "TODO",
+                    "domain_tag" : "TODO",
+                    "doi" : "DOI of the document (or of the extractions' origin document)",
+                    "TODO" : "TODO ASKEM_CLASS specific field parameter definitions.",
                 },
                 "methods" : ["GET"],
                 "output_formats" : ["json"],
                 "fields" : {
-                    "metadata" : "Metadata of the stored object. Provided at ingestion by registrant and potentially augmented by additional processes.",
-                    "askem_id" : "Object id",
+                    "ASKEM_CLASS" : "TODO",
+                    "ASKEM_ID" : "Object id",
                     "_xdd_created" : "Timestamp of when the object was registered within xDD.",
                     "_xdd_registrant" : "Registrant of object within xDD.",
-                    "[object-specific fields]": "Provided at ingestion by registrant."
+                    "properties": "TODO"
                     },
                 "examples" : [
                     "/object/all",
