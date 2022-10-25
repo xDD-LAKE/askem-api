@@ -6,6 +6,7 @@ import json
 from uuid import uuid4, UUID
 from typing import Type
 from functools import wraps
+import requests
 import psycopg2
 from psycopg2.extras import execute_values
 from flask import Flask, request, Blueprint
@@ -244,11 +245,6 @@ def get_object(object_id):
     askem_class = request.args.get('askem_class', type=str, default="")
     domain_tag = request.args.get('domain_tag', type=str, default="")
 
-    doi = request.args.get('doi', default='', type=str)
-    if docid == '' and doi != '':
-        docid = get_docid_from_doi(doi)
-        if docid == '':
-            return jsonify({'error' : 'DOI not in xDD system!', 'v' : VERSION})
 
     # TODO: these keys should be the ones visible in an imported schema, with slightly different query logic based on type
     filter_keys = ["description", "primaryName", "XDDID", "contentText", "DOMAIN_TAGS", "sourceID"]
@@ -257,8 +253,16 @@ def get_object(object_id):
         if k in request.args:
             query[k] = request.args.get(k)
 
-    if docid != "" and not "XDDID" in query:
-        query["XDDID"] = docid
+    doi = request.args.get('doi', default='', type=str)
+    docid = ""
+    if doi != '':
+        docid = get_docid_from_doi(doi)
+        if docid == '':
+            return jsonify({'error' : 'DOI not in xDD system!', 'v' : VERSION})
+        if not "XDDID" in query:
+            query["XDDID"] = docid
+        else:
+            return jsonify({'error': "DOI and XDDID options are currently incompatible!"})
 
     # TODO: catch if there are "extra" parameters passed in
 
