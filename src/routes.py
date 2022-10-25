@@ -68,6 +68,5 @@ helptext = {
                 "examples": []
                 }
             },
-        "update" : {"TODO" : ""}
         }
 
