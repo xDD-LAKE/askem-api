@@ -115,36 +115,45 @@ paths:
     get:
       tags:
       - Retrieval
-      summary: Retrieve or search (via metadata) for an uploaded object.
-      description: Retrieve or search (via metadata) for an uploaded object.
+      summary: Search metadata properties of objects.
+      description: Search metadata properties of objects.
       parameters:
       - name: object_id
+        description: TODO
+        deprecated: true
         in: query
-        description: ASKEM-ID of object to retrieve.
         schema:
-          $ref: "#/components/schemas/ASKEM-ID"
+          $ref: "#/components/schemas/Object/properties/ASKEM_ID"
+      - name: ASKEM_CLASS
+        description: TODO
+        in: query
+        schema:
+          $ref: "#/components/schemas/Object/properties/ASKEM_CLASS"
+      - name: DOMAIN_TAGS
+        description: TODO
+        in: query
+        schema:
+          $ref: '#/components/schemas/Object/properties/DOMAIN_TAGS'
       responses:
         "200":
           description: Successful operation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Reservation'
+                $ref: '#/components/schemas/Object'
         "400":
           description: Invalid input
       security:
       - api_key: [] 
 components:
   schemas:
-    ASKEM-ID:
-      type: string
-      format: uuid
-      example: "8c1582bc-ba6b-4786-9a7f-379a67451568"
     Object:
       type: object
       properties:
         ASKEM_ID:
-          $ref: "#/components/schemas/ASKEM-ID"
+          type: string
+          format: uuid
+          example: "8c1582bc-ba6b-4786-9a7f-379a67451568"
         ASKEM_CLASS:
           type: string
           example: "Document"
@@ -154,6 +163,8 @@ components:
         properties:
           description: Class-specific properties
           type: object
+          anyOf:
+          - $ref: '#/components/schemas/primaryName'
           example:
             title: "This is an ASKEM Document"
             DOI: "10.123/123"
@@ -176,9 +187,6 @@ components:
           properties:
             description: Table-specific properties
             type: object
-            properties:
-              contents:
-                type: string
     Registration:
       type: object
       properties:
@@ -195,6 +203,9 @@ components:
           items:
             $ref: "#/components/schemas/ASKEM-ID"
           example: ["8c1582bc-ba6b-4786-9a7f-379a67451568"]
+    primaryName:
+      type: string
+      description: The primary name of the parameter
     Register:
       type: array
       description: An array of arrays, each of which is a [ASKEM-ID, JSON object] tuple.
@@ -204,23 +215,6 @@ components:
           oneOf:
           - $ref: "#/components/schemas/ASKEM-ID"
           - $ref: "#/components/schemas/Object"
-    Address:
-      type: object
-      properties:
-        street:
-          type: string
-          example: 437 Lytton
-        city:
-          type: string
-          example: Palo Alto
-        state:
-          type: string
-          example: CA
-        zip:
-          type: string
-          example: "94301"
-      xml:
-        name: address
     Category:
       type: object
       properties:
@@ -325,24 +319,12 @@ components:
           type: string
       xml:
         name: '##default'
-  requestBodies:
-    Pet:
-      description: Pet object that needs to be added to the store
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Pet'
-        application/xml:
-          schema:
-            $ref: '#/components/schemas/Pet'
-    UserArray:
-      description: List of user object
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/User'
+  parameters:
+    contents:
+      in: query
+      name: contents
+      schema:
+        type: string
   securitySchemes:
     api_key:
       type: apiKey
