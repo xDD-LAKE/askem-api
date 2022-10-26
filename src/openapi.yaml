@@ -1,0 +1,350 @@
+openapi: 3.0.2
+info:
+  title: ASKEM Object API
+  description: "This is an API for registering, recalling, and searching for \
+                JSON objects within the xDD system."
+  contact:
+    email: xdd-askem@g-groups.wisc.edu
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 0.0.1
+servers:
+- url: https://xdddev.chtc.io/askem/
+  description: "Development instance"
+paths:
+  /create:
+    post:
+      tags:
+      - Registration
+      summary: Create and register a new ASKEM-object.
+      description: Create and register a new ASKEM-object.
+      requestBody:
+        description: Create and register a new ASKEM-object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Object'
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        "400":
+          description: Invalid input
+      security:
+      - api_key: []
+  /register:
+    post:
+      tags:
+      - Registration
+      summary: Register an object with a previously reserved ASKEM-ID.
+      description: Register an object with a previously reserved ASKEM-ID.
+      requestBody:
+        description: Register an object with a previously reserved ASKEM-ID.
+        content:
+          application/json:
+            schema:
+              type: array
+              items: 
+              $ref: '#/components/schemas/Register'
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        "400":
+          description: Invalid input
+      security:
+      - api_key: []    
+  /reserve:
+    post:
+      tags:
+      - Registration
+      summary: Reserve a block of ASKEM-IDs for later registration.
+      description: Reserve a block of ASKEM-IDs for later registration.
+      parameters:
+      - name: n
+        in: query
+        description: Number of ASKEM-IDs to reserve
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        "400":
+          description: Invalid input
+      security:
+      - api_key: []  
+  /object/{object_id}:
+    get:
+      tags:
+      - Retrieval
+      summary: Retrieve an uploaded object.
+      description: Retrieve an uploaded object.
+      parameters:
+      - name: object_id
+        in: path
+        description: ASKEM-ID of object to retrieve.
+        required: true
+        schema:
+          $ref: "#/components/schemas/ASKEM-ID"
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Object'
+        "400":
+          description: Invalid input
+      security:
+      - api_key: [] 
+  /object:
+    get:
+      tags:
+      - Retrieval
+      summary: Retrieve or search (via metadata) for an uploaded object.
+      description: Retrieve or search (via metadata) for an uploaded object.
+      parameters:
+      - name: object_id
+        in: query
+        description: ASKEM-ID of object to retrieve.
+        schema:
+          $ref: "#/components/schemas/ASKEM-ID"
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        "400":
+          description: Invalid input
+      security:
+      - api_key: [] 
+components:
+  schemas:
+    ASKEM-ID:
+      type: string
+      format: uuid
+      example: "8c1582bc-ba6b-4786-9a7f-379a67451568"
+    Object:
+      type: object
+      properties:
+        ASKEM_ID:
+          $ref: "#/components/schemas/ASKEM-ID"
+        ASKEM_CLASS:
+          type: string
+          example: "Document"
+          enum:
+          - Table
+          - Figure
+        properties:
+          description: Class-specific properties
+          type: object
+          example:
+            title: "This is an ASKEM Document"
+            DOI: "10.123/123"
+            trustScore: 0.0
+        DOMAIN_TAGS:
+          type: array
+          items: 
+            type: string
+        RAW_DATA:
+          type: object
+        EXTERNAL_URL:
+          type: string
+          format: url
+    Table:
+      description: "A table extracted from literature via the COSMOS pipeline"
+      allOf:
+      - $ref: '#/components/schemas/Object'
+      - type: object
+        properties:
+          properties:
+            description: Table-specific properties
+            type: object
+            properties:
+              contents:
+                type: string
+    Registration:
+      type: object
+      properties:
+        registered_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/ASKEM-ID"
+          example: ["8c1582bc-ba6b-4786-9a7f-379a67451568"]
+    Reservation:
+      type: object
+      properties:
+        reserved_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/ASKEM-ID"
+          example: ["8c1582bc-ba6b-4786-9a7f-379a67451568"]
+    Register:
+      type: array
+      description: An array of arrays, each of which is a [ASKEM-ID, JSON object] tuple.
+      items:
+        type: array
+        items:
+          oneOf:
+          - $ref: "#/components/schemas/ASKEM-ID"
+          - $ref: "#/components/schemas/Object"
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+          example: 437 Lytton
+        city:
+          type: string
+          example: Palo Alto
+        state:
+          type: string
+          example: CA
+        zip:
+          type: string
+          example: "94301"
+      xml:
+        name: address
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: Dogs
+      xml:
+        name: category
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+        username:
+          type: string
+          example: theUser
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: James
+        email:
+          type: string
+          example: john@email.com
+        password:
+          type: string
+          example: "12345"
+        phone:
+          type: string
+          example: "12345"
+        userStatus:
+          type: integer
+          description: User Status
+          format: int32
+          example: 1
+      xml:
+        name: user
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+      xml:
+        name: tag
+    Pet:
+      required:
+      - name
+      - photoUrls
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+        name:
+          type: string
+          example: doggie
+        category:
+          $ref: '#/components/schemas/Category'
+        photoUrls:
+          type: array
+          xml:
+            wrapped: true
+          items:
+            type: string
+            xml:
+              name: photoUrl
+        tags:
+          type: array
+          xml:
+            wrapped: true
+          items:
+            $ref: '#/components/schemas/Tag'
+        status:
+          type: string
+          description: pet status in the store
+          enum:
+          - available
+          - pending
+          - sold
+      xml:
+        name: pet
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        type:
+          type: string
+        message:
+          type: string
+      xml:
+        name: '##default'
+  requestBodies:
+    Pet:
+      description: Pet object that needs to be added to the store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Pet'
+        application/xml:
+          schema:
+            $ref: '#/components/schemas/Pet'
+    UserArray:
+      description: List of user object
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/User'
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header
