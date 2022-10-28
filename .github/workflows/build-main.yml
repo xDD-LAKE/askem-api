@@ -1,8 +1,8 @@
-name: Build master
+name: Build main
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   docker:
@@ -17,7 +17,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            hub.opensciencegrid.org/xdd/askem_api
+            hub.opensciencegrid.org/xdd/askem-api
           tags: |
             type=sha,enable=true,priority=100,prefix=sha-,suffix=,format=short
             type=raw,value=latest,enable={{is_default_branch}}
