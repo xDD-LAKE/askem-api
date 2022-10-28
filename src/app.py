@@ -18,12 +18,12 @@ import routes
 import schema
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.DEBUG)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=None)
 app.config['JSON_SORT_KEYS'] = False
 app.url_map.strict_slashes = False
 app.retriever=ElasticRetriever(hosts=os.environ.get('ES_HOST', "es01:9200"))
 app.retriever.create_index()
-bp = Blueprint('xDD-askem-api', __name__)
+bp = Blueprint('xDD-askem-api', __name__, static_folder="static")
 
 SCHEMA_KEYS = []
 for i in schema.__dict__.keys():
