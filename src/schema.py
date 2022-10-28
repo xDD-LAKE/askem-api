@@ -1,16 +1,21 @@
+BASE_PROPERTIES = []
 BASE_KEYWORD_PROPERTIES = [
         "ASKEM_ID",
         "ASKEM_CLASS",
         "EXTERNAL_URL",
         ]
+BASE_PROPERTIES += BASE_KEYWORD_PROPERTIES
 
 BASE_OBJECT_PROPERTIES = [
         "RAW_DATA",
         ]
+BASE_PROPERTIES += BASE_OBJECT_PROPERTIES
 
 BASE_TEXT_PROPERTIES = [
         "DOMAIN_TAGS"
         ]
+BASE_PROPERTIES += BASE_TEXT_PROPERTIES
+
 
 # Keyword for exact-match fields, including fields which are arrays of keywords
 KEYWORD_PROPERTIES = [

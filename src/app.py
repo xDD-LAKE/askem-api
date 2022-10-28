@@ -15,6 +15,7 @@ from flask_cors import CORS
 from elastic_retriever import ElasticRetriever
 from mergedeep import merge
 import routes
+import schema
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.DEBUG)
 
 app = Flask(__name__)
@@ -23,6 +24,12 @@ app.url_map.strict_slashes = False
 app.retriever=ElasticRetriever(hosts=os.environ.get('ES_HOST', "es01:9200"))
 app.retriever.create_index()
 bp = Blueprint('xDD-askem-api', __name__)
+
+SCHEMA_KEYS = []
+for i in schema.__dict__.keys():
+    if "PROPERTIES" in i:
+        SCHEMA_KEYS += schema.__dict__[i]
+logging.info(SCHEMA_KEYS)
 
 # TODO: get ride of this obvious placeholder
 KNOWN_MODELS=[]
@@ -236,20 +243,12 @@ def get_object(object_id):
     page_num = request.args.get('page', type=int)
     if page_num is None: page_num=0
 
-    # pre-schema
-    metadata_type = request.args.get('metadata_type', type=str, default="")
-    source_title = request.args.get('source_title', type=str, default="")
-    provenance_method = request.args.get('provenance_method', type=str, default="")
-
     # post-schema
     askem_class = request.args.get('askem_class', type=str, default="")
     domain_tag = request.args.get('domain_tag', type=str, default="")
 
-
-    # TODO: these keys should be the ones visible in an imported schema, with slightly different query logic based on type
-    filter_keys = ["description", "primaryName", "XDDID", "contentText", "DOMAIN_TAGS", "sourceID"]
     query = {}
-    for k in filter_keys:
+    for k in SCHEMA_KEYS:
         if k in request.args:
             query[k] = request.args.get(k)
 
@@ -272,29 +271,20 @@ def get_object(object_id):
         object_id = "all"
 
     if object_id is None:
-        if metadata_type is not None:
-            logging.info("Searching by metadata type")
-            count = app.retriever.search_metadata(
-                    askem_class=askem_class,
-                    domain_tag=domain_tag,
-                    metadata_type=metadata_type,
-                    source_title=source_title,
-                    provenance_method=provenance_method,
-                    count=True,
-                    **query
-                    )
-            logging.info(count)
-            res = app.retriever.search_metadata(
-                    askem_class=askem_class,
-                    domain_tag=domain_tag,
-                    metadata_type=metadata_type,
-                    source_title=source_title,
-                    provenance_method=provenance_method,
-                    page=page_num,
-                    **query
-                    )
-            return {"total" : count, "page" : page_num, "data": res}
-        return routes.helptext['object']
+        logging.info("No object_id specified - searching")
+        count = app.retriever.search_metadata(
+                askem_class=askem_class,
+                domain_tag=domain_tag,
+                count=True,
+                **query
+                )
+        res = app.retriever.search_metadata(
+                askem_class=askem_class,
+                domain_tag=domain_tag,
+                page=page_num,
+                **query
+                )
+        return {"total" : count, "page" : page_num, "data": res}
     res = app.retriever.get_object(object_id)
     if not isinstance(res, list):
         res = [res]
