@@ -194,7 +194,7 @@ paths:
           $ref: '#/components/schemas/Parameter/properties/properties/properties/rawLocation'
       # FunctionNetwork-specific properties
       # Document-specific properties
-      - name: DOI
+      - name: doi
         description: The DOI of a publication (or the URL to a document without a DOI)
         in: query
         schema:
@@ -440,7 +440,7 @@ components:
             title:
               description: The title of the document
               type: string
-            DOI:
+            doi:
               description: The DOI of a publication (or the URL to a document without a DOI)
               type: string
             trustScore:
