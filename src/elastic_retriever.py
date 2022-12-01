@@ -173,6 +173,7 @@ class ElasticRetriever(Retriever):
             count: bool = False,
             ndocs: int = 30,
             page: int = 0,
+            qmatch: bool = False,
             **kwargs) -> dict:
         q = Q()
 
@@ -189,7 +190,10 @@ class ElasticRetriever(Retriever):
             if key in schema.BASE_PROPERTIES:
                 q = q & Q('match', **{f"{key}": value})
             else:
-                q = q & Q('match_phrase', **{f"properties__{key}": value})
+                if qmatch:
+                    q = q & Q('match', **{f"properties__{key}": value})
+                else:
+                    q = q & Q('match_phrase', **{f"properties__{key}": value})
 
         logger.info(q.to_dict())
         s = Search(index=INDEX)

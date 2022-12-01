@@ -269,6 +269,11 @@ def get_object(object_id):
 
     if "all" in request.args:
         object_id = "all"
+    if "match" in request.args and request.args.get("match").lower() != "false" :
+        qmatch = True
+    else:
+        qmatch = False
+
 
     if object_id is None:
         logging.info("No object_id specified - searching")
@@ -276,12 +281,14 @@ def get_object(object_id):
                 askem_class=askem_class,
                 domain_tag=domain_tag,
                 count=True,
+                qmatch=qmatch,
                 **query
                 )
         res = app.retriever.search_metadata(
                 askem_class=askem_class,
                 domain_tag=domain_tag,
                 page=page_num,
+                qmatch=qmatch,
                 **query
                 )
         return {"total" : count, "page" : page_num, "data": res}
