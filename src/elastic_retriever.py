@@ -20,7 +20,34 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 es_logger = logging.getLogger('elasticsearch')
 es_logger.setLevel(logging.WARNING)
-INDEX = "askem-object-02"
+INDEX = "askem-object-06"
+
+def json_extract(obj):
+    """Recursively fetch values from nested JSON."""
+    arr = []
+    sarr = ""
+    ignore_keys = ['_id', 'ASKEM_ID', '_xdd_created', '_xdd_registrant', "ASKEM_CLASS"]
+
+    def extract(obj, arr, sarr):
+        """Recursively search for values of key in JSON tree."""
+
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, (dict, list)):
+                    arr, sarr = extract(v, arr, sarr)
+                else:
+                    if k not in ignore_keys:
+                        arr.append(v)
+                        sarr += f" {v}"
+                    else:
+                        continue
+        elif isinstance(obj, list):
+            for item in obj:
+                arr, sarr = extract(item, arr, sarr)
+        return arr, sarr
+
+    values, svalues = extract(obj, arr, sarr)
+    return values, svalues
 
 def upsert(doc: Document) -> dict:
     d = doc.to_dict(True)
@@ -239,6 +266,7 @@ class ElasticRetriever(Retriever):
             subproperties[prop] = {"type" : "long"}
         for prop in schema.BINARY_PROPERTIES:
             subproperties[prop] = {"type" : "binary"}
+        properties["_all"] = {"type" : "text"}
         # Mildly annoying that the mapping parlance and our chosen parlance are the same here..
         properties['properties'] = {"properties" : subproperties}
         return properties
@@ -289,6 +317,9 @@ class ElasticRetriever(Retriever):
 
     def add_object(self, data: dict) -> int:
         # TODO (eventually) : check data consistency
+        test, stest = json_extract(data)
+        data["_all"] = stest
+
         test = ASKEMObject(**data)
         try:
             test.save()
