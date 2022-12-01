@@ -190,6 +190,7 @@ class ElasticRetriever(Retriever):
     def search(self, query: dict) -> dict:
         doc_filter = False
         s = Search(index=INDEX)
+        s.source(exclude=["_all"])
         s = s.query(query)
         response = s.execute()
         return response
@@ -211,15 +212,19 @@ class ElasticRetriever(Retriever):
 
         # schema-derived searching
         # TODO: type-specific querying.
+        logging.info(kwargs)
         for key, value in kwargs.items():
-            logger.info(f"Adding {key}:{value} to the query")
+            logging.info(f"Adding {key}:{value} to the query")
             if key in schema.BASE_PROPERTIES:
                 q = q & Q('match', **{f"{key}": value})
+            elif key=="query_all":
+                q = q & Q('match', **{"_all": value})
             else:
                 q = q & Q('match_phrase', **{f"properties__{key}": value})
 
         logger.info(q.to_dict())
         s = Search(index=INDEX)
+        s.source(exclude=["_all"])
         start = page * ndocs
         end = start + ndocs
         logger.info(f"Getting results {start}-{end}")
@@ -236,8 +241,9 @@ class ElasticRetriever(Retriever):
         try:
             if id=="all":
                 s = Search(index=INDEX)
+                s.source(exclude=["_all"])
                 return [e.to_dict() for e in s.scan()]
-            obj = ASKEMObject.get(id=id).to_dict()
+            obj = ASKEMObject.get(id=id, _source_excludes=["_all"]).to_dict()
         except:
 
             logger.warning(sys.exc_info())
