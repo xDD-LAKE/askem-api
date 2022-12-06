@@ -263,6 +263,9 @@ def get_object(object_id):
         else:
             return jsonify({'error': "DOI and XDDID options are currently incompatible!"})
 
+    if "query_all" in request.args:
+        query["query_all"] = request.args.get("query_all")
+
     # TODO: catch if there are "extra" parameters passed in
 
     object_id = request.args.get('object_id', type=str, default=None) if object_id is None else object_id
