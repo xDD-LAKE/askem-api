@@ -1,0 +1,628 @@
+openapi: 3.0.2
+info:
+  title: ASKEM Object API
+  description: "This is an API for registering, recalling, and searching for \
+                JSON objects within the xDD system."
+  contact:
+    email: xdd-askem@g-groups.wisc.edu
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 0.0.1
+servers:
+- url: https://xdddev.chtc.io/askem/
+  description: "Development instance"
+paths:
+  /create:
+    post:
+      tags:
+      - Registration
+      summary: Create and register a new ASKEM-object.
+      description: Create and register a new ASKEM-object.
+      requestBody:
+        description: Create and register a new ASKEM-object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Object'
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        "400":
+          description: Invalid input
+      security:
+      - api_key: []
+  /register:
+    post:
+      tags:
+      - Registration
+      summary: Register an object with a previously reserved ASKEM-ID.
+      description: Register an object with a previously reserved ASKEM-ID.
+      requestBody:
+        description: Register an object with a previously reserved ASKEM-ID.
+        content:
+          application/json:
+            schema:
+              type: array
+              items: 
+              $ref: '#/components/schemas/Register'
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        "400":
+          description: Invalid input
+      security:
+      - api_key: []    
+  /reserve:
+    post:
+      tags:
+      - Registration
+      summary: Reserve a block of ASKEM-IDs for later registration.
+      description: Reserve a block of ASKEM-IDs for later registration.
+      parameters:
+      - name: n
+        in: query
+        description: Number of ASKEM-IDs to reserve
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        "400":
+          description: Invalid input
+      security:
+      - api_key: []  
+  /object/{object_id}:
+    get:
+      tags:
+      - Retrieval
+      summary: Retrieve an uploaded object.
+      description: Retrieve an uploaded object by referring directly to its ASKEM_ID.
+      parameters:
+      - name: object_id
+        in: path
+        description: ASKEM-ID of object to retrieve.
+        required: true
+        schema:
+          $ref: "#/components/schemas/Object/properties/ASKEM_ID"
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Object'
+        "400":
+          description: Invalid input
+      security:
+      - api_key: [] 
+  /object:
+    get:
+      tags:
+      - Retrieval
+      summary: Search metadata properties of objects.
+      description: Search metadata properties of objects. Each object stored has an ASKEM class, and each of those classes has a number of inherent properties. Within xDD, the properties to adhere to the prescribed schema are indexed and searchable. Inclusion of a property name as a parameter will run the query against that stored data field. Note that many parameters are shared across classes (for example, caption applies to both Figure and Table objects). The ASKEM_CLASS parameter can be used to restrict the query to a specific class.
+      parameters:
+      - name: object_id
+        description: TODO
+        deprecated: true
+        in: query
+        schema:
+          $ref: "#/components/schemas/Object/properties/ASKEM_ID"
+      - name: ASKEM_CLASS
+        description: TODO
+        in: query
+        schema:
+          $ref: "#/components/schemas/Object/properties/ASKEM_CLASS"
+      - name: DOMAIN_TAGS
+        description: TODO
+        in: query
+        schema:
+          $ref: '#/components/schemas/Object/properties/DOMAIN_TAGS'
+      # Model-specific properties
+      - name: primaryName
+        description: The name of the model
+        in: query
+        schema:
+          $ref: '#/components/schemas/Model/properties/properties/properties/primaryName'
+      - name: description
+        description: A text-based description of the object
+        in: query
+        schema:
+          $ref: '#/components/schemas/Model/properties/properties/properties/description'
+      - name: hasParameter
+        description: A parameter present in the model, referred to by ASKEM-ID.
+        in: query
+        schema:
+          $ref: '#/components/schemas/Model/properties/properties/properties/hasParameter'
+      - name: allParameters
+        description: The list of names of the paramters present in Model
+        in: query
+        schema:
+          $ref: '#/components/schemas/Model/properties/properties/properties/allParameters'
+      # Scenario-specific properties
+      - name: consideredModel
+        description: A model considered in the Scenario
+        in: query
+        schema:
+          $ref: '#/components/schemas/Scenario/properties/properties/properties/consideredModel'
+      - name: consideredModelName
+        description: The name of the model corresponding to the ASKEM-ID in the consideredModel property.
+        in: query
+        schema:
+          $ref: '#/components/schemas/Scenario/properties/properties/properties/consideredModelName'
+      - name: rawTime
+        description: A description of the timeframe of the scenario
+        in: query
+        schema:
+          $ref: '#/components/schemas/Scenario/properties/properties/properties/rawTime'
+      - name: rawLocation
+        description: A description of the location of the scenario
+        in: query
+        schema:
+          $ref: '#/components/schemas/Scenario/properties/properties/properties/rawLocation'
+      # Parameter-specific properties
+      - name: value
+        description: A numerical value that the model parameter takes
+        in: query
+        schema:
+          $ref: '#/components/schemas/Parameter/properties/properties/properties/value'
+      - name: unit
+        description: The unit describing the values of the parameter
+        in: query
+        schema:
+          $ref: '#/components/schemas/Parameter/properties/properties/properties/unit'
+      - name: rawLocation
+        description: A description of the location of the parameter
+        in: query
+        schema:
+          $ref: '#/components/schemas/Parameter/properties/properties/properties/rawLocation'
+      # FunctionNetwork-specific properties
+      # Document-specific properties
+      - name: doi
+        description: The DOI of a publication (or the URL to a document without a DOI)
+        in: query
+        schema:
+          $ref: '#/components/schemas/Document/properties/properties/properties/DOI'
+      - name: trustScore
+        description: The trustworthiness score of the document
+        in: query
+        schema:
+          $ref: '#/components/schemas/Document/properties/properties/properties/trustScore'
+      - name: abstract
+        description: The abstract of the document, if available.
+        in: query
+        schema:
+          $ref: '#/components/schemas/Document/properties/properties/properties/abstract'
+      # Section-specific properties
+      - name: title
+        description: The title/heading of the section
+        in: query
+        schema:
+          $ref: '#/components/schemas/Section/properties/properties/properties/title'    
+      - name: documentID
+        description: The ASKEM_ID of the document this section belongs to
+        in: query
+        schema:
+          $ref: '#/components/schemas/Section/properties/properties/properties/documentID'  
+      - name: documentTitle
+        description: The title of the document this section belongs to
+        in: query
+        schema:
+          $ref: '#/components/schemas/Section/properties/properties/properties/documentTitle' 
+      - name: textContent
+        description: The text content of this section
+        in: query
+        schema:
+          $ref: '#/components/schemas/Section/properties/properties/properties/textContent'
+      - name: indexInDocument
+        description: The section index within this document
+        in: query
+        schema:
+          $ref: '#/components/schemas/Section/properties/properties/properties/indexInDocument'
+      # Table-specific properties
+      - name: caption
+        description: The caption of the table
+        in: query
+        schema:
+          $ref: '#/components/schemas/Table/properties/properties/properties/caption'    
+      - name: contentText
+        description: The raw text content of the table (no structure)
+        in: query
+        schema:
+          $ref: '#/components/schemas/Table/properties/properties/properties/contentText'  
+      - name: sectionTitle
+        description: Title/header of the section that this table is in.
+        in: query
+        schema:
+          $ref: '#/components/schemas/Table/properties/properties/properties/sectionTitle'  
+      - name: sectionID
+        description: ASKEM_ID of the section this table belongs to
+        in: query
+        schema:
+          $ref: '#/components/schemas/Table/properties/properties/properties/sectionID'
+      - name: relevantSentences
+        description: ASKEM_ID of the section this table belongs to
+        in: query
+        schema:
+          $ref: '#/components/schemas/Table/properties/properties/properties/relevantSentences'  
+      # Figure-specific properties
+      # Term-specific properties
+      - name: sourceID
+        description: The unique idenitifer of the term in the source KG
+        in: query
+        schema:
+          $ref: '#/components/schemas/Term/properties/properties/properties/sourceID'       
+      - name: source
+        description: The name (capturing version information) of the source that the ter appears in
+        in: query
+        schema:
+          $ref: '#/components/schemas/Term/properties/properties/properties/source'    
+      - name: synonyms
+        description: A list of all the aliases/synonyms of the term
+        in: query
+        schema:
+          $ref: '#/components/schemas/Term/properties/properties/properties/synonyms'  
+      # Thing-specific properties
+      
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Object'
+        "400":
+          description: Invalid input
+      security:
+      - api_key: [] 
+components:
+  schemas:
+    Object:
+      type: object
+      properties:
+        ASKEM_ID:
+          type: string
+          format: uuid
+          #example: "8c1582bc-ba6b-4786-9a7f-379a67451568"
+        ASKEM_CLASS:
+          type: string
+          #example: "Document"
+          enum:
+          - Table
+          - Figure
+          - Model
+          - Term
+          - Scenario
+          - Parameter
+          - Section
+          - Document
+          - Thing
+          - FunctionNetwork
+        DOMAIN_TAGS:
+          type: array
+          items: 
+            type: string
+        RAW_DATA:
+          type: object
+        EXTERNAL_URL:
+          type: string
+          format: url
+        properties:
+          type: object
+          properties:
+            primaryName:
+              description: test
+              type: string
+    Model:
+      type: object
+      description: "Representation of a model"
+      allOf:
+        - $ref: '#/components/schemas/Object'
+        - type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            primaryName:
+              description: The name of the model
+              type: string
+            description:
+              description: A text-based description of the model.
+              type: string
+            hasParameter:
+              description: A parameter present in the model, referred to by ASKEM-ID.
+              $ref: '#/components/schemas/Object/properties/ASKEM_ID'
+            allParameters:
+              description: The list of names of the paramters present in Model
+              type: array
+              items: 
+                type: string
+            functionNetwork:
+              description: A function network that implements the Model
+              $ref: '#/components/schemas/Object/properties/ASKEM_ID'
+    Scenario:
+      description: "Class defining a scenario"
+      allOf:
+        - $ref: '#/components/schemas/Object'
+        - type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            description:
+              description: A text-based description of the scenario.
+              type: string
+            consideredModel:
+              description: A model consiered in the Scenario
+              $ref: '#/components/schemas/Object/properties/ASKEM_ID'
+            consideredModelName:
+              description: The name of the model correspoinding to the ASKEM-ID in the consideredModel property.
+              type: string
+            rawTime:
+              description: A description of the timeframe of the scenario
+              type: string
+            rawLocation:
+              description: A description of the locatio of the scenario
+              type: string
+            populationMetadata:
+              description: Additional raw metadata describing the scenario
+              type: object
+    Parameter:
+      description: "Parameters defining a model's behavior"
+      allOf:
+        - $ref: '#/components/schemas/Object'
+        - type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            primaryName:
+              description: The primary name of the parameter.
+              type: string
+            description:
+              description: A text-based description of the parameter.
+              type: string
+            value:
+              description: A numerical value that the model parameter takes
+              type: number
+            unit:
+              description: The unit describing the values of the parameter
+              type: string
+            rawLocation:
+              description: A description of the locatio of the scenario
+              type: string
+            populationMetadata:
+              description: Additional raw metadata describing the scenario
+              type: object
+    FunctionNetwork:
+      description: "Function network representation of a model."
+      allOf:
+        - $ref: '#/components/schemas/Object'
+        - type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            primaryName:
+              description: The primary name of the parameter.
+              type: string
+            description:
+              description: A text-based description of the parameter.
+              type: string
+            gromet:
+              description: The Gromet file implmenting the function network
+              type: object
+    Document:
+      description: "Published scientific literature"
+      allOf:
+        - $ref: '#/components/schemas/Object'
+        - type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            title:
+              description: The title of the document
+              type: string
+            doi:
+              description: The DOI of a publication (or the URL to a document without a DOI)
+              type: string
+            trustScore:
+              description: The trustworthiness score of the document
+              type: number
+            abstract:
+              description: The abstract of the document, if available
+              type: string
+    Section:
+      description: "A table extracted from literature via the COSMOS pipeline"
+      allOf:
+        - $ref: '#/components/schemas/Object'
+        - type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            title:
+              description: The title/heading of the section
+              type: string
+            documentID:
+              description: The ASKEM_ID of the document this section belongs to
+              $ref: '#/components/schemas/Object/properties/ASKEM_ID'
+            documentTitle: 
+              description: The title of the document this section belongs to
+              type: string
+            textContent:
+              description: The text content of this section
+              type: string
+            indexInDocument:
+              description: The section index within this document
+              type: integer
+    Table:
+      description: "A table extracted from literature via the COSMOS pipeline"
+      allOf:
+        - $ref: '#/components/schemas/Object'
+        - type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            caption:
+              description: The caption of the table
+              type: string
+            documentID:
+              description: The ASKEM_ID of the document this table belongs to
+              $ref: '#/components/schemas/Object/properties/ASKEM_ID'
+            documentTitle: 
+              description: The title of the document this table belongs to
+              type: string
+            contentText:
+              description: The raw text content of the table (no structure)
+              type: string
+            contentJSON:
+              description: The table in JSON format
+              type: object
+            image:
+              description: The image extraction of this table (JPG, base64 encoded)
+              type: string
+            sectionTitle:
+              description: Title of the section that this table is in.
+              type: string
+            sectionID:
+              description: ASKEM_ID of the section this table belongs to
+              $ref: '#/components/schemas/Object/properties/ASKEM_ID'
+            relevantSentences:
+              description: A list of sentences that discuss/cite the table
+              type: array
+              items:
+                type: string
+    Figure:
+      description: "A figure extracted from literature via the COSMOS pipeline"
+      allOf:
+      - $ref: '#/components/schemas/Object'
+      - type: object
+        properties:
+          properties:
+            type: object
+            properties:
+              caption:
+                description: The caption of the figure
+                type: string
+              documentID:
+                description: The ASKEM_ID of the document this figure belongs to
+                $ref: '#/components/schemas/Object/properties/ASKEM_ID'
+              documentTitle: 
+                description: The title of the document this figure belongs to
+                type: string
+              contentText:
+                description: The raw text content of the figure (no structure)
+                type: string
+              image:
+                description: The image extraction of this table (JPG, base64 encoded)
+                type: string
+              sectionTitle:
+                description: Title of the section that this table is in.
+                type: string
+              sectionID:
+                description: ASKEM_ID of the section this table belongs to
+                $ref: '#/components/schemas/Object/properties/ASKEM_ID'
+              relevantSentences:
+                description: A list of sentences that discuss/cite the table
+                type: array
+                items:
+                  type: string
+    Term:
+      description: "A term within a knowledge graph"
+      allOf:
+      - $ref: '#/components/schemas/Object'
+      - type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            primaryName:
+              description: The primary name of a domain knowledge term
+              type: string
+            description:
+              description: A text-based description of the parameter.
+              type: string
+            sourceID:
+              description: The unique idenitifer of the term in the source KG
+              type: string
+            source: 
+              description: The name (capturing version information) of the source that the ter appears in
+              type: string
+            synonyms:
+              description: A list of all the aliases/synonyms of th term
+              type: array
+              items:
+                type: string
+    Thing:
+      description: "A term within a knowledge graph"
+      allOf:
+      - $ref: '#/components/schemas/Object'
+      - type: object
+      properties:
+        properties:
+          type: object
+          properties:
+            primaryName:
+              description: The primary name of a domain knowledge term
+              type: string
+            description:
+              description: A text-based description of the parameter.
+              type: string
+            rawData:
+              description: Any metadata in JSON describing the entity
+              type: object
+    Registration:
+      type: object
+      properties:
+        registered_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Object/properties/ASKEM_ID"
+          example: ["8c1582bc-ba6b-4786-9a7f-379a67451568"]
+    Reservation:
+      type: object
+      properties:
+        reserved_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Object/properties/ASKEM_ID"
+          example: ["8c1582bc-ba6b-4786-9a7f-379a67451568"]
+    Register:
+      type: array
+      description: An array of arrays, each of which is a [ASKEM-ID, JSON object] tuple.
+      items:
+        type: array
+        items:
+          oneOf:
+          - $ref: "#/components/schemas/Object/properties/ASKEM_ID"
+          - $ref: "#/components/schemas/Object"
+  parameters:
+    contents:
+      in: query
+      name: contents
+      schema:
+        type: string
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header
