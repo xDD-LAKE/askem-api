@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 es_logger = logging.getLogger('elasticsearch')
 es_logger.setLevel(logging.WARNING)
-INDEX = "askem-object-06"
+INDEX = "askem-object-07"
 
 def json_extract(obj):
     """Recursively fetch values from nested JSON."""
@@ -260,6 +260,8 @@ class ElasticRetriever(Retriever):
         subproperties = {}
         for prop in schema.BASE_KEYWORD_PROPERTIES:
             properties[prop] = {"type" : "keyword"}
+        for prop in schema.BASE_INTEGER_PROPERTIES:
+            properties[prop] = {"type" : "integer"}
         for prop in schema.BASE_OBJECT_PROPERTIES:
             properties[prop] = {"type" : "object"}
         for prop in schema.BASE_TEXT_PROPERTIES:
