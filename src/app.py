@@ -110,6 +110,23 @@ def get_docid_from_doi(doi):
                 return i['_gddid']
     return ''
 
+def get_bibjsons(docids):
+    docids=','.join(docids)
+    logging.info(docids)
+    resp = requests.get(f"https://xdd.wisc.edu/api/articles?docids={docids}")
+    bibjson = {}
+    if resp.status_code == 200:
+        data = resp.json()
+        if 'success' in data:
+            for i in data['success']['data']:
+                bibjson[i['_gddid']] = i
+        else:
+            logging.error(f'Unable to find success key: {data}')
+            bibjson = None #{"Error" : "Could not retrieve article data"}
+    else:
+        bibjson = None #{"Error" : "Could not retrieve article data"}
+    return bibjson
+
 def check_path_exists(original, update) -> bool:
     """Return True if path exists in given dict."""
     path = []
@@ -294,6 +311,16 @@ def get_object(object_id):
                 qmatch=qmatch,
                 **query
                 )
+        # postprocess results
+
+        ## get bibjson
+        docids = [i["properties"]["XDDID"] for i in res if "properties" in i and "XDDID" in i["properties"]]
+        if docids != []:
+            bibjson = get_bibjsons(docids)
+            for i in res:
+                if "properties" in i and "XDDID" in i["properties"]:
+                    i["properties"]["documentBibjson"] = bibjson[i["properties"]["XDDID"]]
+
         return {"total" : count, "page" : page_num, "data": res}
     res = app.retriever.get_object(object_id)
     if not isinstance(res, list):
