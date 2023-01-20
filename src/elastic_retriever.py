@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 es_logger = logging.getLogger('elasticsearch')
 es_logger.setLevel(logging.WARNING)
-INDEX = "askem-object-07"
+INDEX = "askem-object-02"
 
 def json_extract(obj):
     """Recursively fetch values from nested JSON."""
@@ -215,16 +215,24 @@ class ElasticRetriever(Retriever):
         # TODO: type-specific querying.
         logging.info(kwargs)
         for key, value in kwargs.items():
-            logging.info(f"Adding {key}:{value} to the query")
             if key in schema.BASE_PROPERTIES:
-                q = q & Q('match', **{f"{key}": value})
+                ql = []
+                for v in value.split(","):
+                    ql.append(Q('match', **{f"{key}": v}))
+                q = q & Q('bool', should=ql)
             elif key=="query_all":
                 q = q & Q('match', **{"_all": value})
             else:
                 if qmatch:
-                    q = q & Q('match', **{f"properties__{key}": value})
+                    ql = []
+                    for v in value.split(","):
+                        ql.append(Q('match', **{f"properties__{key}": v}))
+                    q = q & Q('bool', should=ql)
                 else:
-                    q = q & Q('match_phrase', **{f"properties__{key}": value})
+                    ql = []
+                    for v in value.split(","):
+                        ql.append(Q('match_phrase', **{f"properties__{key}": v}))
+                    q = q & Q('bool', should=ql)
 
         logger.info(q.to_dict())
         s = Search(index=INDEX)
