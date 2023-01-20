@@ -20,7 +20,11 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 es_logger = logging.getLogger('elasticsearch')
 es_logger.setLevel(logging.WARNING)
-INDEX = "askem-object-02"
+
+if "ES_INDEX" in os.environ:
+    INDEX = os.environ["ES_INDEX"]
+else:
+    INDEX = "askem-object-07"
 
 def json_extract(obj):
     """Recursively fetch values from nested JSON."""
@@ -220,14 +224,17 @@ class ElasticRetriever(Retriever):
                 for v in value.split(","):
                     ql.append(Q('match', **{f"{key}": v}))
                 q = q & Q('bool', should=ql)
+                logger.info(q.to_dict())
             elif key=="query_all":
                 q = q & Q('match', **{"_all": value})
+                logger.info(q.to_dict())
             else:
                 if qmatch:
                     ql = []
                     for v in value.split(","):
                         ql.append(Q('match', **{f"properties__{key}": v}))
                     q = q & Q('bool', should=ql)
+
                 else:
                     ql = []
                     for v in value.split(","):
