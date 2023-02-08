@@ -269,6 +269,7 @@ def get_object(object_id):
         if k in request.args:
             query[k] = request.args.get(k)
 
+    include_highlights = request.args.get('include_highlights', default=False, type=bool)
     doi = request.args.get('doi', default='', type=str)
     docid = ""
     if doi != '':
@@ -309,6 +310,7 @@ def get_object(object_id):
                 domain_tag=domain_tag,
                 page=page_num,
                 qmatch=qmatch,
+                include_highlights = include_highlights,
                 **query
                 )
         # postprocess results

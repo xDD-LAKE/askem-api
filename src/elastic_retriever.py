@@ -206,8 +206,12 @@ class ElasticRetriever(Retriever):
             ndocs: int = 30,
             page: int = 0,
             qmatch: bool = False,
+            include_highlights: bool = False,
             **kwargs) -> dict:
         q = Q()
+
+        hfields = []
+        no_highlight_fields = ["ASKEM_CLASS", "DOMAIN_TAGS"]
 
         # deprecated parameters, originally added by hand
         if askem_class:
@@ -216,32 +220,31 @@ class ElasticRetriever(Retriever):
             q = q & Q('match', DOMAIN_TAGS=domain_tag)
 
         # schema-derived searching
-        # TODO: type-specific querying.
-        logging.info(kwargs)
         for key, value in kwargs.items():
             if key in schema.BASE_PROPERTIES:
                 ql = []
                 for v in value.split(","):
                     ql.append(Q('match', **{f"{key}": v}))
+                    if key not in no_highlight_fields: hfields.append(key)
                 q = q & Q('bool', should=ql)
-                logger.info(q.to_dict())
             elif key=="query_all":
                 q = q & Q('match', **{"_all": value})
-                logger.info(q.to_dict())
+                hfields.append("_all")
             else:
                 if qmatch:
                     ql = []
                     for v in value.split(","):
                         ql.append(Q('match', **{f"properties__{key}": v}))
+                        hfields.append(f"properties.{key}")
                     q = q & Q('bool', should=ql)
 
                 else:
                     ql = []
                     for v in value.split(","):
                         ql.append(Q('match_phrase', **{f"properties__{key}": v}))
+                        hfields.append(f"properties.{key}")
                     q = q & Q('bool', should=ql)
 
-        logger.info(q.to_dict())
         s = Search(index=INDEX)
         s.source(exclude=["_all"])
         start = page * ndocs
@@ -250,9 +253,19 @@ class ElasticRetriever(Retriever):
         if count:
             return s.query(q).count()
         s = s.query(q)[start:end]
+        if include_highlights:
+            s = s.highlight(*hfields,  pre_tags='<em class="hl">', post_tags = '</em>')
         response = s.execute()
-        final_results = [r.meta.id for r in response]
-        final_results = [self.get_object(i) for i in final_results]
+        final_results = []
+        for r in response:
+            obj = self.get_object(r.meta.id)
+            if include_highlights:
+                highlights = []
+                if "highlight" not in r.meta: continue
+                for k, v in r.meta.highlight.to_dict().items():
+                    highlights+=v
+                obj["_highlight"] = highlights
+            final_results.append(obj)
         return final_results
 
 
