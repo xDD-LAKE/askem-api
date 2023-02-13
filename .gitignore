@@ -1,2 +1,8 @@
 es_data/
 data/
+
+src/__pycache__/
+
+deploy/.DS_Store
+
+.DS_Store
