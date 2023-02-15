@@ -110,10 +110,13 @@ def get_docid_from_doi(doi):
                 return i['_gddid']
     return ''
 
-def get_bibjsons(docids):
+def get_bibjsons(docids, query=None, include_highlights=False):
     docids=','.join(docids)
     logging.info(docids)
-    resp = requests.get(f"https://xdd.wisc.edu/api/articles?docids={docids}")
+    url = f"https://xdd.wisc.edu/api/articles?docids={docids}"
+    if query is not None and include_highlights:
+        url += f"&term={query}&include_highlights=true"
+    resp = requests.get(url)
     bibjson = {}
     if resp.status_code == 200:
         data = resp.json()
@@ -264,12 +267,16 @@ def get_object(object_id):
     askem_class = request.args.get('askem_class', type=str, default="")
     domain_tag = request.args.get('domain_tag', type=str, default="")
 
+    include_highlights = request.args.get('include_highlights', default=False, type=bool)
+
     query = {}
+    query_terms = []
     for k in SCHEMA_KEYS:
         if k in request.args:
             query[k] = request.args.get(k)
+            if include_highlights and k not in schema.NO_HIGHLIGHT_FIELDS:
+                query_terms.append(query[k])
 
-    include_highlights = request.args.get('include_highlights', default=False, type=bool)
     doi = request.args.get('doi', default='', type=str)
     docid = ""
     if doi != '':
@@ -318,7 +325,7 @@ def get_object(object_id):
         ## get bibjson
         docids = [i["properties"]["XDDID"] for i in res if "properties" in i and "XDDID" in i["properties"]]
         if docids != []:
-            bibjson = get_bibjsons(docids)
+            bibjson = get_bibjsons(docids, query=",".join(query_terms), include_highlights=True)
             for i in res:
                 if "properties" in i and "XDDID" in i["properties"]:
                     i["properties"]["documentBibjson"] = bibjson[i["properties"]["XDDID"]]
