@@ -8,9 +8,7 @@ from datetime import datetime
 import schema
 import sys
 import os
-import glob
 import dateutil.parser
-from mergedeep import merge
 import json
 import hashlib
 import logging
@@ -211,7 +209,6 @@ class ElasticRetriever(Retriever):
         q = Q()
 
         hfields = []
-        no_highlight_fields = ["ASKEM_CLASS", "DOMAIN_TAGS"]
 
         # deprecated parameters, originally added by hand
         if askem_class:
@@ -225,7 +222,7 @@ class ElasticRetriever(Retriever):
                 ql = []
                 for v in value.split(","):
                     ql.append(Q('match', **{f"{key}": v}))
-                    if key not in no_highlight_fields: hfields.append(key)
+                    if key not in schema.NO_HIGHLIGHT_FIELDS: hfields.append(key)
                 q = q & Q('bool', should=ql)
             elif key=="query_all":
                 q = q & Q('match', **{"_all": value})
