@@ -290,6 +290,7 @@ def get_object(object_id):
 
     if "query_all" in request.args:
         query["query_all"] = request.args.get("query_all")
+        query_terms.append(query['query_all'])
 
     # TODO: catch if there are "extra" parameters passed in
 
