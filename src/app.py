@@ -14,6 +14,7 @@ from flask import jsonify
 from flask_cors import CORS
 from elastic_retriever import ElasticRetriever
 from mergedeep import merge
+from distutils import util
 import routes
 import schema
 logging.basicConfig(format='%(levelname)s :: %(asctime)s :: %(message)s', level=logging.DEBUG)
