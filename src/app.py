@@ -31,6 +31,10 @@ for i in schema.__dict__.keys():
         SCHEMA_KEYS += schema.__dict__[i]
 logging.info(SCHEMA_KEYS)
 
+if "ENFORCE_API_KEY" in os.environ:
+    ENFORCE_API_KEY = bool(util.strtobool(os.environ["ENFORCE_API_KEY"])) # use the value provided
+else:
+    ENFORCE_API_KEY = False
 if "API_KEYS" in os.environ:
     API_KEYS = os.environ["API_KEYS"].split(",")
 else:
