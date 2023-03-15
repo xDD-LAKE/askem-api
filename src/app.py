@@ -341,7 +341,7 @@ def get_object(object_id):
                 if "properties" in i and "XDDID" in i["properties"]:
                     i["properties"]["documentBibjson"] = bibjson[i["properties"]["XDDID"]]
                 if "ASKEM_CLASS" in i and i["ASKEM_CLASS"] in ["Table", "Figure", "Equation"]:
-                    if not (request.args.get('api_key') and request.args.get('api_key') in API_KEYS):
+                    if ENFORCE_API_KEY and not (request.args.get('api_key') and request.args.get('api_key') in API_KEYS):
                         del i['properties']['image']
 
         return {"total" : count, "page" : page_num, "data": res}
