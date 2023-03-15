@@ -31,6 +31,11 @@ for i in schema.__dict__.keys():
         SCHEMA_KEYS += schema.__dict__[i]
 logging.info(SCHEMA_KEYS)
 
+if "API_KEYS" in os.environ:
+    API_KEYS = os.environ["API_KEYS"].split(",")
+else:
+    API_KEYS = []
+
 # TODO: get ride of this obvious placeholder
 KNOWN_MODELS=[]
 VERSION = 1
@@ -330,6 +335,9 @@ def get_object(object_id):
             for i in res:
                 if "properties" in i and "XDDID" in i["properties"]:
                     i["properties"]["documentBibjson"] = bibjson[i["properties"]["XDDID"]]
+                if "ASKEM_CLASS" in i and i["ASKEM_CLASS"] in ["Table", "Figure", "Equation"]:
+                    if not (request.args.get('api_key') and request.args.get('api_key') in API_KEYS):
+                        del i['properties']['image']
 
         return {"total" : count, "page" : page_num, "data": res}
     res = app.retriever.get_object(object_id)
