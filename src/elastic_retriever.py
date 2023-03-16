@@ -225,7 +225,10 @@ class ElasticRetriever(Retriever):
                     if key not in schema.NO_HIGHLIGHT_FIELDS: hfields.append(key)
                 q = q & Q('bool', should=ql)
             elif key=="query_all":
-                q = q & Q('match', **{"_all": value})
+                if qmatch:
+                    q = q & Q('match', **{"_all": value})
+                else:
+                    q = q & Q('match_phrase', **{"_all": value})
                 hfields.append("_all")
             else:
                 if qmatch:

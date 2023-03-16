@@ -120,12 +120,14 @@ def get_docid_from_doi(doi):
                 return i['_gddid']
     return ''
 
-def get_bibjsons(docids, query=None, include_highlights=False):
+def get_bibjsons(docids, query=None, include_highlights=False, match=False):
     docids=','.join(docids)
     logging.info(docids)
     url = f"https://xdd.wisc.edu/api/articles?docids={docids}"
     if query is not None and include_highlights:
         url += f"&term={query}&include_highlights=true"
+    if match:
+        url += "&match=true"
     resp = requests.get(url)
     bibjson = {}
     if resp.status_code == 200:
@@ -336,10 +338,13 @@ def get_object(object_id):
         ## get bibjson
         docids = [i["properties"]["XDDID"] for i in res if "properties" in i and "XDDID" in i["properties"]]
         if docids != []:
-            bibjson = get_bibjsons(docids, query=",".join(query_terms), include_highlights=include_highlights)
+            bibjson = get_bibjsons(docids, query=",".join(query_terms), include_highlights=include_highlights, match=qmatch)
             for i in res:
                 if "properties" in i and "XDDID" in i["properties"]:
-                    i["properties"]["documentBibjson"] = bibjson[i["properties"]["XDDID"]]
+                    if i["properties"]["XDDID"] in bibjson:
+                        i["properties"]["documentBibjson"] = bibjson[i["properties"]["XDDID"]]
+                    else:
+                        i["properties"]["documentBibjson"] = get_bibjsons([i["properties"]["XDDID"]])[i["properties"]["XDDID"]]
                 if "ASKEM_CLASS" in i and i["ASKEM_CLASS"] in ["Table", "Figure", "Equation"]:
                     if ENFORCE_API_KEY and not (request.args.get('api_key') and request.args.get('api_key') in API_KEYS):
                         del i['properties']['image']
