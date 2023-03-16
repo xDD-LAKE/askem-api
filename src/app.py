@@ -336,7 +336,7 @@ def get_object(object_id):
         ## get bibjson
         docids = [i["properties"]["XDDID"] for i in res if "properties" in i and "XDDID" in i["properties"]]
         if docids != []:
-            bibjson = get_bibjsons(docids, query=",".join(query_terms), include_highlights=True)
+            bibjson = get_bibjsons(docids, query=",".join(query_terms), include_highlights=include_highlights)
             for i in res:
                 if "properties" in i and "XDDID" in i["properties"]:
                     i["properties"]["documentBibjson"] = bibjson[i["properties"]["XDDID"]]
